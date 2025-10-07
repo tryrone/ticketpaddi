@@ -1,37 +1,19 @@
 "use client";
 
-import React from "react";
-import {
-  Table,
-  Badge,
-  Avatar,
-  ActionIcon,
-  Menu,
-  Text,
-  Group,
-  Stack,
-  Button,
-  TextInput,
-  Select,
-  Flex,
-  Title,
-  Paper,
-  Container,
-  Pagination,
-  Center,
-} from "@mantine/core";
+import React, { useState, useMemo } from "react";
 import {
   IconDots,
   IconSearch,
-  IconFilter,
   IconPlus,
   IconEdit,
   IconTrash,
   IconEye,
+  IconChevronUp,
+  IconChevronDown,
 } from "@tabler/icons-react";
 import { CompanyTableProps } from "@/types/company";
-import { useState, useMemo } from "react";
 import { formatDate } from "@/utils/date";
+import { ActionIcon, Menu, Select } from "@mantine/core";
 
 const CompanyTable: React.FC<CompanyTableProps> = ({
   companies,
@@ -122,137 +104,177 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
     }
   };
 
-  const SortableHeader = ({
-    column,
-    children,
-  }: {
-    column: string;
-    children: React.ReactNode;
-  }) => (
-    <th
-      style={{ cursor: "pointer", userSelect: "none" }}
-      onClick={() => handleSort(column)}
-    >
-      <Group gap="xs">
-        {children}
-        {sortBy === column && (
-          <Text size="xs" c="dimmed">
-            {sortDirection === "asc" ? "↑" : "↓"}
-          </Text>
-        )}
-      </Group>
-    </th>
-  );
-
   return (
-    <div style={{ padding: "var(--mantine-spacing-md)" }}>
-      <Paper p="md" mb="md">
-        <Flex justify="space-between" align="center" mb="md">
-          <Title order={2} c="dark">
-            <Group gap="sm">
-              <IconSearch size={24} />
-              Companies
-            </Group>
-          </Title>
-          <Group gap="sm">
-            <Button leftSection={<IconPlus size={16} />} variant="filled">
+    <div className="bg-white shadow-sm">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <h2 className="text-xl font-semibold text-gray-900">Companies</h2>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <IconPlus size={16} className="mr-2" />
               Create Company
-            </Button>
-            <Button leftSection={<IconFilter size={16} />} variant="outline">
-              Filter
-            </Button>
-          </Group>
-        </Flex>
+            </button>
+          </div>
+        </div>
+      </div>
 
-        <Flex gap="md" mb="md">
-          <TextInput
-            placeholder="Search companies, industry, location..."
-            leftSection={<IconSearch size={16} />}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flex: 1 }}
-          />
-          <Select
-            placeholder="Filter by status"
-            data={[
-              { value: "all", label: "All Status" },
-              { value: "active", label: "Active" },
-              { value: "inactive", label: "Inactive" },
-              { value: "pending", label: "Pending" },
-            ]}
-            value={statusFilter}
-            onChange={(value) => setStatusFilter(value || "all")}
-            style={{ width: 200 }}
-          />
-        </Flex>
+      {/* Search and Filter */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <IconSearch size={16} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search companies, industry, location..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div className="sm:w-48">
+            <Select
+              placeholder="Filter by status"
+              data={[
+                { value: "all", label: "All Status" },
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+                { value: "pending", label: "Pending" },
+              ]}
+              value={statusFilter}
+              onChange={(value) => setStatusFilter(value || "all")}
+              style={{ width: 200 }}
+              styles={{
+                input: {
+                  height: 43,
+                },
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <SortableHeader column="name">
-                <Text fw={600}>Company</Text>
-              </SortableHeader>
-              <SortableHeader column="industry">
-                <Text fw={600}>Industry</Text>
-              </SortableHeader>
-              <SortableHeader column="status">
-                <Text fw={600}>Status</Text>
-              </SortableHeader>
-              <SortableHeader column="events">
-                <Text fw={600}>Events</Text>
-              </SortableHeader>
-              <th>
-                <Text fw={600}>Location</Text>
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th
+                onClick={() => handleSort("name")}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Company</span>
+                  {sortBy === "name" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? (
+                        <IconChevronUp size={12} />
+                      ) : (
+                        <IconChevronDown size={12} />
+                      )}
+                    </span>
+                  )}
+                </div>
               </th>
-              <th>
-                <Text fw={600}>Last Event</Text>
+
+              <th
+                onClick={() => handleSort("status")}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Status</span>
+                  {sortBy === "status" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? (
+                        <IconChevronUp size={12} />
+                      ) : (
+                        <IconChevronDown size={12} />
+                      )}
+                    </span>
+                  )}
+                </div>
               </th>
-              <th>
-                <Text fw={600}>Actions</Text>
+              <th
+                onClick={() => handleSort("events")}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Events</span>
+                  {sortBy === "events" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? (
+                        <IconChevronUp size={12} />
+                      ) : (
+                        <IconChevronDown size={12} />
+                      )}
+                    </span>
+                  )}
+                </div>
               </th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Location
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Last Event
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
             {paginatedCompanies.map((company) => (
-              <Table.Tr key={company.id}>
-                <Table.Td>
-                  <Group gap="sm">
-                    <Avatar src={company.logo} size="md" radius="sm">
-                      {company.name.charAt(0)}
-                    </Avatar>
-                    <Stack gap={2}>
-                      <Text fw={500} size="sm">
+              <tr key={company.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10">
+                      <div className="h-10 w-10 rounded-md bg-blue-500 flex items-center justify-center text-white font-medium">
+                        {company.name.charAt(0)}
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">
                         {company.name}
-                      </Text>
-                      <Text size="xs" c="dimmed">
+                      </div>
+                      <div className="text-sm text-gray-500">
                         ID: {company.id}
-                      </Text>
-                    </Stack>
-                  </Group>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="sm">{company.industry}</Text>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color={getStatusColor(company.status)} variant="light">
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      company.status === "active"
+                        ? "bg-green-100 text-green-800"
+                        : company.status === "inactive"
+                        ? "bg-red-100 text-red-800"
+                        : company.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
                     {company.status.charAt(0).toUpperCase() +
                       company.status.slice(1)}
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Text fw={600} size="sm">
-                    {company.numberOfEvents.toLocaleString()}
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="sm">{company.location}</Text>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="sm" c="dimmed">
-                    {formatDate(company.lastEventDate)}
-                  </Text>
-                </Table.Td>
-                <Table.Td>
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {company.numberOfEvents.toLocaleString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {company.location}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(company.lastEventDate)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Menu shadow="md" width={200}>
                     <Menu.Target>
                       <ActionIcon variant="subtle" color="gray">
@@ -282,40 +304,67 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
                       </Menu.Item>
                     </Menu.Dropdown>
                   </Menu>
-                </Table.Td>
-              </Table.Tr>
+                </td>
+              </tr>
             ))}
-          </Table.Tbody>
-        </Table>
+          </tbody>
+        </table>
+      </div>
 
-        {filteredAndSortedCompanies.length === 0 && (
-          <Center py="xl">
-            <Stack align="center" gap="md">
-              <Text c="dimmed">No companies found matching your criteria</Text>
-              <Button
-                variant="light"
-                onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("all");
-                }}
+      {/* Empty State */}
+      {filteredAndSortedCompanies.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-gray-500 mb-4">
+            No companies found matching your criteria
+          </div>
+          <button
+            onClick={() => {
+              setSearchTerm("");
+              setStatusFilter("all");
+            }}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Clear Filters
+          </button>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+              {Math.min(
+                currentPage * itemsPerPage,
+                filteredAndSortedCompanies.length
+              )}{" "}
+              of {filteredAndSortedCompanies.length} results
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Clear Filters
-              </Button>
-            </Stack>
-          </Center>
-        )}
-
-        {totalPages > 1 && (
-          <Flex justify="center" mt="md">
-            <Pagination
-              value={currentPage}
-              onChange={setCurrentPage}
-              total={totalPages}
-              size="sm"
-            />
-          </Flex>
-        )}
-      </Paper>
+                Previous
+              </button>
+              <span className="px-3 py-2 text-sm font-medium text-gray-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

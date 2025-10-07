@@ -2,21 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  AppShell,
-  Group,
-  TextInput,
-  Avatar,
-  Badge,
-  Burger,
-  Drawer,
-  Stack,
-  NavLink,
-  Divider,
-  ActionIcon,
-  Notification,
-  rem,
-} from "@mantine/core";
-import {
   IconSearch,
   IconBell,
   IconUser,
@@ -25,20 +10,23 @@ import {
   IconCalendar,
   IconSettings,
   IconLogout,
+  IconMenu2,
+  IconX,
 } from "@tabler/icons-react";
-import { useDisclosure } from "@mantine/hooks";
 import CompanyTable from "../CompanyTable";
 import { Company } from "@/types/company";
 import { mockCompanies } from "@/data/companies";
-import Text from "../Text";
 
 const CompanyListPage: React.FC = () => {
-  const [opened, { toggle, close }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
   const [companies, setCompanies] = useState<Company[]>(mockCompanies);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
+
+  const toggle = () => setOpened(!opened);
+  const close = () => setOpened(false);
 
   const handleEditCompany = (company: Company) => {
     setNotification({ message: `Editing ${company.name}`, type: "success" });
@@ -65,126 +53,151 @@ const CompanyListPage: React.FC = () => {
   const activeCompanies = companies.filter((c) => c.status === "active").length;
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-50">
+      {/* Notification */}
       {notification && (
-        <Notification
-          title={notification.type === "success" ? "Success" : "Error"}
-          color={notification.type === "success" ? "green" : "red"}
-          onClose={() => setNotification(null)}
-          style={{ position: "fixed", top: 20, right: 20, zIndex: 1000 }}
+        <div
+          className={`fixed top-5 right-5 z-50 p-4 rounded-lg shadow-lg ${
+            notification.type === "success"
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
         >
-          {notification.message}
-        </Notification>
+          <div className="flex items-center justify-between">
+            <span className="font-medium">
+              {notification.type === "success" ? "Success" : "Error"}
+            </span>
+            <button
+              onClick={() => setNotification(null)}
+              className="ml-4 text-gray-500 hover:text-gray-700"
+            >
+              <IconX size={16} />
+            </button>
+          </div>
+          <p className="mt-1">{notification.message}</p>
+        </div>
       )}
 
-      <AppShell
-        header={{ height: 60 }}
-        padding="md"
-        styles={{
-          main: {
-            paddingTop: rem(60),
-            maxWidth: "1400px",
-            margin: "0 auto",
-            width: "100%",
-          },
-        }}
-      >
-        <AppShell.Header>
-          <Group h="100%" px="md">
-            <Burger
-              opened={opened}
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Mobile menu button */}
+            <button
               onClick={toggle}
-              hiddenFrom="sm"
-              size="sm"
-            />
+              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            >
+              <IconMenu2 size={20} />
+            </button>
 
-            {/* Top Navigation */}
-            <Group justify="space-between" style={{ width: "100%" }}>
-              <Group>
-                <TextInput
-                  placeholder="Search companies, events, industry..."
-                  leftSection={<IconSearch size={16} />}
-                  style={{ width: 400 }}
-                />
-              </Group>
+            {/* Search */}
+            <div className="flex-1 max-w-lg mx-4" />
 
-              <Group gap="md">
-                <Group gap="xs">
-                  <Text fontSize="sm" color="dimmed">
-                    Total Events:
-                  </Text>
-                  <Badge color="blue" variant="light" size="lg">
+            {/* Stats and User Menu */}
+            <div className="flex items-center space-x-4">
+              {/* Stats */}
+              <div className="hidden sm:flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Total Events:</span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {totalEvents.toLocaleString()}
-                  </Badge>
-                </Group>
-
-                <Group gap="xs">
-                  <Text fontSize="sm" color="dimmed">
-                    Active:
-                  </Text>
-                  <Badge color="green" variant="light">
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Active:</span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     {activeCompanies}
-                  </Badge>
-                </Group>
+                  </span>
+                </div>
+              </div>
 
-                <ActionIcon variant="subtle" color="gray">
-                  <IconBell size={20} />
-                </ActionIcon>
+              {/* Notifications */}
+              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md">
+                <IconBell size={20} />
+              </button>
 
-                <Avatar size="sm" color="blue">
-                  <IconUser size={16} />
-                </Avatar>
-              </Group>
-            </Group>
-          </Group>
-        </AppShell.Header>
-
-        <AppShell.Main>
-          <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
-            <CompanyTable
-              companies={companies}
-              onEdit={handleEditCompany}
-              onDelete={handleDeleteCompany}
-              onView={handleViewCompany}
-            />
+              {/* User Avatar */}
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <IconUser size={16} className="text-white" />
+                </div>
+              </div>
+            </div>
           </div>
-        </AppShell.Main>
+        </div>
+      </header>
 
-        {/* Mobile Drawer */}
-        <Drawer opened={opened} onClose={close} title="Navigation" size="sm">
-          <Stack gap="xs">
-            <NavLink
-              href="/"
-              label="Dashboard"
-              leftSection={<IconHome size={16} />}
-              active
-            />
-            <NavLink
-              href="/companies"
-              label="Companies"
-              leftSection={<IconBuilding size={16} />}
-            />
-            <NavLink
-              href="/events"
-              label="Events"
-              leftSection={<IconCalendar size={16} />}
-            />
-            <Divider />
-            <NavLink
-              href="/settings"
-              label="Settings"
-              leftSection={<IconSettings size={16} />}
-            />
-            <NavLink
-              href="/logout"
-              label="Logout"
-              leftSection={<IconLogout size={16} />}
-              color="red"
-            />
-          </Stack>
-        </Drawer>
-      </AppShell>
-    </>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <CompanyTable
+          companies={companies}
+          onEdit={handleEditCompany}
+          onDelete={handleDeleteCompany}
+          onView={handleViewCompany}
+        />
+      </main>
+
+      {/* Mobile Drawer */}
+      {opened && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            onClick={close}
+          ></div>
+          <div className="fixed inset-y-0 left-0 flex flex-col w-64 bg-white shadow-xl">
+            <div className="flex items-center justify-between px-4 py-6">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Navigation
+              </h2>
+              <button
+                onClick={close}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+              >
+                <IconX size={20} />
+              </button>
+            </div>
+            <nav className="flex-1 px-4 pb-4 space-y-1">
+              <a
+                href="/"
+                className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-md"
+              >
+                <IconHome size={16} className="mr-3" />
+                Dashboard
+              </a>
+              <a
+                href="/companies"
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+              >
+                <IconBuilding size={16} className="mr-3" />
+                Companies
+              </a>
+              <a
+                href="/events"
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+              >
+                <IconCalendar size={16} className="mr-3" />
+                Events
+              </a>
+              <div className="border-t border-gray-200 my-4"></div>
+              <a
+                href="/settings"
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+              >
+                <IconSettings size={16} className="mr-3" />
+                Settings
+              </a>
+              <a
+                href="/logout"
+                className="flex items-center px-3 py-2 text-sm font-medium text-red-700 hover:text-red-900 hover:bg-red-50 rounded-md"
+              >
+                <IconLogout size={16} className="mr-3" />
+                Logout
+              </a>
+            </nav>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
