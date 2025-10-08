@@ -164,6 +164,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
     <Modal
       opened={isOpen}
       onClose={onClose}
+      size="lg"
       styles={{
         body: {
           padding: "8px 0px",

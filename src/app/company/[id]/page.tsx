@@ -15,6 +15,8 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 import EventCard from "@/components/EventCard";
+import EventModal from "@/components/EventModal";
+import { useEventModal } from "@/hooks/useEventModal";
 import { Event } from "@/types/event";
 import { Company } from "@/types/company";
 import { useCompany, useEventsByCompany } from "@/hooks/useFirestore";
@@ -43,6 +45,9 @@ const CompanyDetailPage: React.FC = () => {
   const [category, setCategory] = useState("all");
   const [favorites, setFavorites] = useState<string[]>([]);
 
+  // Event modal hook
+  const { isOpen, openModal, closeModal, handleSuccess } = useEventModal();
+
   // Update filtered events when events change
   useEffect(() => {
     setFilteredEvents(events);
@@ -55,8 +60,10 @@ const CompanyDetailPage: React.FC = () => {
     if (searchTerm) {
       filtered = filtered.filter(
         (event) =>
-          event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          event?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          event?.description
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           event.location.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -94,7 +101,7 @@ const CompanyDetailPage: React.FC = () => {
         );
         break;
       case "name":
-        filtered.sort((a, b) => a.title.localeCompare(b.title));
+        filtered.sort((a, b) => (a?.title || "").localeCompare(b?.title || ""));
         break;
       default:
         // Keep original order
@@ -245,7 +252,10 @@ const CompanyDetailPage: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <button
+              onClick={() => openModal(undefined, company)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
               <IconPlus size={16} className="mr-2" />
               Add Event
             </button>
@@ -369,6 +379,18 @@ const CompanyDetailPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Event Modal */}
+      <EventModal
+        isOpen={isOpen}
+        onClose={closeModal}
+        onSuccess={(event) => {
+          // Refresh events by updating the local state
+          setFilteredEvents((prev) => [...prev, event]);
+          handleSuccess(event);
+        }}
+        company={company}
+      />
     </div>
   );
 };
