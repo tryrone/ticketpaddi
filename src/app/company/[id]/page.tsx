@@ -17,16 +17,25 @@ import {
 import EventCard from "@/components/EventCard";
 import { Event } from "@/types/event";
 import { Company } from "@/types/company";
-import { getEventsByCompany } from "@/data/events";
-import { mockCompanies } from "@/data/companies";
+import { useCompany, useEventsByCompany } from "@/hooks/useFirestore";
 import { Select } from "@mantine/core";
 
 const CompanyDetailPage: React.FC = () => {
   const params = useParams();
   const companyId = params.id as string;
 
-  const [company, setCompany] = useState<Company | null>(null);
-  const [events, setEvents] = useState<Event[]>([]);
+  // Use Firestore hooks
+  const {
+    company,
+    loading: companyLoading,
+    error: companyError,
+  } = useCompany(companyId);
+  const {
+    events,
+    loading: eventsLoading,
+    error: eventsError,
+  } = useEventsByCompany(companyId);
+
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("default");
@@ -34,18 +43,10 @@ const CompanyDetailPage: React.FC = () => {
   const [category, setCategory] = useState("all");
   const [favorites, setFavorites] = useState<string[]>([]);
 
+  // Update filtered events when events change
   useEffect(() => {
-    // Find company by ID
-    const foundCompany = mockCompanies.find((c) => c.id === companyId);
-    if (foundCompany) {
-      setCompany(foundCompany);
-    }
-
-    // Get events for this company
-    const companyEvents = getEventsByCompany(companyId);
-    setEvents(companyEvents);
-    setFilteredEvents(companyEvents);
-  }, [companyId]);
+    setFilteredEvents(events);
+  }, [events]);
 
   useEffect(() => {
     let filtered = [...events];
@@ -118,14 +119,61 @@ const CompanyDetailPage: React.FC = () => {
     console.log("Viewing event:", event.title);
   };
 
-  const categories = Array.from(new Set(events.map((event) => event.category)));
-
-  if (!company) {
+  // Loading state
+  if (companyLoading || eventsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading company details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (companyError || eventsError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <IconBuilding size={48} className="mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Error Loading Data
+          </h2>
+          <p className="text-gray-600 mb-4">{companyError || eventsError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Company not found
+  if (!company) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-400 mb-4">
+            <IconBuilding size={48} className="mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Company Not Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            The company you're looking for doesn't exist or has been removed.
+          </p>
+          <button
+            onClick={() => window.history.back()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Back
+          </button>
         </div>
       </div>
     );
@@ -192,10 +240,6 @@ const CompanyDetailPage: React.FC = () => {
                   <IconCalendar size={16} className="mr-1" />
                   <span>{company.numberOfEvents} Events</span>
                 </div>
-                <div className="flex items-center">
-                  <IconUsers size={16} className="mr-1" />
-                  <span>{company.industry}</span>
-                </div>
               </div>
             </div>
           </div>
@@ -203,7 +247,7 @@ const CompanyDetailPage: React.FC = () => {
           <div className="flex items-center space-x-3">
             <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
               <IconPlus size={16} className="mr-2" />
-              Create Company
+              Add Event
             </button>
           </div>
         </div>

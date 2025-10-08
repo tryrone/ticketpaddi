@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   IconBell,
   IconUser,
@@ -11,33 +11,53 @@ import {
   IconLogout,
   IconMenu2,
   IconX,
+  IconPlus,
 } from "@tabler/icons-react";
 import CompanyTable from "../CompanyTable";
+import CompanyModal from "../CompanyModal";
+import { useCompanyModal } from "@/hooks/useCompanyModal";
 import { Company } from "@/types/company";
-import { mockCompanies } from "@/data/companies";
+import { useCompanies, useDeleteCompany } from "@/hooks/useFirestore";
 
 const CompanyListPage: React.FC = () => {
   const [opened, setOpened] = useState(false);
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
+
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
 
+  // Company hook
+  const { companies, loading, fetchCompanies } = useCompanies();
+
+  // Company modal hook
+  const { isOpen, openModal, closeModal, handleSuccess } = useCompanyModal();
+
+  // delete company hook
+  const { remove, error: deleteError } = useDeleteCompany();
+
   const toggle = () => setOpened(!opened);
   const close = () => setOpened(false);
 
-  const handleEditCompany = (company: Company) => {
-    setNotification({ message: `Editing ${company.name}`, type: "success" });
-    // Here you would typically open a modal or navigate to an edit page
-  };
+  const handleEditCompany = (company: Company) => {};
 
   const handleDeleteCompany = (company: Company) => {
-    setCompanies((prev) => prev.filter((c) => c.id !== company.id));
-    setNotification({
-      message: `${company.name} deleted successfully`,
-      type: "success",
-    });
+    remove(company.id)
+      .then(() => {
+        setNotification({
+          message: `${company.name} deleted successfully`,
+          type: "success",
+        });
+        fetchCompanies();
+      })
+      .catch((err) => {
+        setNotification({
+          message: deleteError
+            ? deleteError
+            : `failed to delete ${company.name}`,
+          type: "error",
+        });
+      });
   };
 
   const handleViewCompany = (company: Company) => {
@@ -45,7 +65,7 @@ const CompanyListPage: React.FC = () => {
   };
 
   const totalEvents = companies.reduce(
-    (sum, company) => sum + company.numberOfEvents,
+    (sum, company) => sum + (company?.numberOfEvents || 0),
     0
   );
   const activeCompanies = companies.filter((c) => c.status === "active").length;
@@ -132,6 +152,8 @@ const CompanyListPage: React.FC = () => {
           onEdit={handleEditCompany}
           onDelete={handleDeleteCompany}
           onView={handleViewCompany}
+          onAddCompany={openModal}
+          loading={loading}
         />
       </main>
 
@@ -195,6 +217,19 @@ const CompanyListPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Company Modal */}
+      <CompanyModal
+        isOpen={isOpen}
+        onClose={closeModal}
+        onSuccess={(company) => {
+          setNotification({
+            message: `${company.name} created successfully`,
+            type: "success",
+          });
+          fetchCompanies();
+        }}
+      />
     </div>
   );
 };

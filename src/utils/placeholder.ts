@@ -1,6 +1,3 @@
-/**
- * Generate a data URL for a placeholder image with the given text and colors
- */
 export const generatePlaceholderImage = (
   text: string,
   backgroundColor: string = "#4F46E5",
@@ -18,18 +15,4 @@ export const generatePlaceholderImage = (
   `;
 
   return `data:image/svg+xml;base64,${btoa(svg)}`;
-};
-
-/**
- * Predefined placeholder images for companies
- */
-export const companyPlaceholders = {
-  TC: generatePlaceholderImage("TC", "#4F46E5", "#FFFFFF"),
-  GE: generatePlaceholderImage("GE", "#10B981", "#FFFFFF"),
-  SH: generatePlaceholderImage("SH", "#F59E0B", "#FFFFFF"),
-  CE: generatePlaceholderImage("CE", "#EF4444", "#FFFFFF"),
-  IL: generatePlaceholderImage("IL", "#8B5CF6", "#FFFFFF"),
-  EM: generatePlaceholderImage("EM", "#06B6D4", "#FFFFFF"),
-  DS: generatePlaceholderImage("DS", "#84CC16", "#FFFFFF"),
-  CO: generatePlaceholderImage("CO", "#F97316", "#FFFFFF"),
 };
