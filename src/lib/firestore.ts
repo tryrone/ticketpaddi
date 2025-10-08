@@ -13,6 +13,7 @@ import {
   startAfter,
   DocumentSnapshot,
   QueryConstraint,
+  increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Company } from "@/types/company";
@@ -222,7 +223,13 @@ export const createEvent = async (
 ): Promise<string> => {
   try {
     const eventsRef = collection(db, EVENTS_COLLECTION);
+    const companyRef = doc(db, COMPANIES_COLLECTION, eventData.companyId);
+
     const docRef = await addDoc(eventsRef, eventData);
+
+    await updateDoc(companyRef, {
+      numberOfEvents: increment(1),
+    });
     return docRef.id;
   } catch (error) {
     console.error("Error creating event:", error);

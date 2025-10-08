@@ -215,9 +215,7 @@ const EventModal: React.FC<EventModalProps> = ({
   };
 
   const handleNext = () => {
-    // if (validateForm()) {
     setCurrentStep(2);
-    // }
   };
 
   return (

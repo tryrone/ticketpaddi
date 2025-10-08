@@ -31,7 +31,9 @@ const CompanyDetailPage: React.FC = () => {
     company,
     loading: companyLoading,
     error: companyError,
+    fetchCompany,
   } = useCompany(companyId);
+
   const {
     events,
     loading: eventsLoading,
@@ -388,6 +390,7 @@ const CompanyDetailPage: React.FC = () => {
           // Refresh events by updating the local state
           setFilteredEvents((prev) => [...prev, event]);
           handleSuccess(event);
+          fetchCompany();
         }}
         company={company}
       />

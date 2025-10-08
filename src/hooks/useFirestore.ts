@@ -51,28 +51,26 @@ export const useCompany = (id: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchCompany = async () => {
+    try {
+      setLoading(true);
+      const data = await getCompanyById(id);
+      setCompany(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch company");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!id) return;
-
-    const fetchCompany = async () => {
-      try {
-        setLoading(true);
-        const data = await getCompanyById(id);
-        setCompany(data);
-        setError(null);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch company"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
 
     fetchCompany();
   }, [id]);
 
-  return { company, loading, error };
+  return { company, loading, error, fetchCompany };
 };
 
 // Event hooks
