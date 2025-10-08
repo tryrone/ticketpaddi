@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  IconSearch,
   IconBell,
   IconUser,
   IconHome,
@@ -42,8 +41,7 @@ const CompanyListPage: React.FC = () => {
   };
 
   const handleViewCompany = (company: Company) => {
-    setNotification({ message: `Viewing ${company.name}`, type: "success" });
-    // Here you would typically navigate to a company details page
+    window.location.href = `/company/${company.id}`;
   };
 
   const totalEvents = companies.reduce(
