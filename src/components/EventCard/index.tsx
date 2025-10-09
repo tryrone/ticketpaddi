@@ -59,7 +59,10 @@ const EventCard: React.FC<EventCardProps> = ({ event, onFavorite, onView }) => {
         <Image
           src={event.image}
           alt="event image"
+          width={400}
+          height={192}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          unoptimized={true}
         />
 
         {/* Favorite Button */}
