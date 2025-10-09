@@ -87,18 +87,18 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
     currentPage * itemsPerPage
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "green";
-      case "inactive":
-        return "red";
-      case "pending":
-        return "yellow";
-      default:
-        return "gray";
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "active":
+  //       return "green";
+  //     case "inactive":
+  //       return "red";
+  //     case "pending":
+  //       return "yellow";
+  //     default:
+  //       return "gray";
+  //   }
+  // };
 
   const handleSort = (column: string) => {
     if (sortBy === column) {

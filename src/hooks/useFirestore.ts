@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Company } from "@/types/company";
 import { Event } from "@/types/event";
 import {
@@ -51,7 +51,7 @@ export const useCompany = (id: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCompany = async () => {
+  const fetchCompany = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getCompanyById(id);
@@ -62,13 +62,13 @@ export const useCompany = (id: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
 
     fetchCompany();
-  }, [id]);
+  }, [id, fetchCompany]);
 
   return { company, loading, error, fetchCompany };
 };

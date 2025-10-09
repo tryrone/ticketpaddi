@@ -79,7 +79,7 @@ const Button = ({
   text,
   type = ButtonTypes.primaryBtn,
   sx,
-  fontFamily = FontFamily.AKTIFO_A_MEDIUM,
+  fontFamily = FontFamily.AKTIFO_A_BOOK,
   fontSize = FontSizes.font_16,
   fontWeight = 500,
   color,

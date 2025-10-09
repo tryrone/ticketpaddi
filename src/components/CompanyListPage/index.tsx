@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   IconBell,
   IconUser,
@@ -11,13 +11,13 @@ import {
   IconLogout,
   IconMenu2,
   IconX,
-  IconPlus,
 } from "@tabler/icons-react";
 import CompanyTable from "../CompanyTable";
 import CompanyModal from "../CompanyModal";
 import { useCompanyModal } from "@/hooks/useCompanyModal";
 import { Company } from "@/types/company";
 import { useCompanies, useDeleteCompany } from "@/hooks/useFirestore";
+import Link from "next/link";
 
 const CompanyListPage: React.FC = () => {
   const [opened, setOpened] = useState(false);
@@ -31,7 +31,7 @@ const CompanyListPage: React.FC = () => {
   const { companies, loading, fetchCompanies } = useCompanies();
 
   // Company modal hook
-  const { isOpen, openModal, closeModal, handleSuccess } = useCompanyModal();
+  const { isOpen, openModal, closeModal } = useCompanyModal();
 
   // delete company hook
   const { remove, error: deleteError } = useDeleteCompany();
@@ -39,7 +39,7 @@ const CompanyListPage: React.FC = () => {
   const toggle = () => setOpened(!opened);
   const close = () => setOpened(false);
 
-  const handleEditCompany = (company: Company) => {};
+  const handleEditCompany = () => {};
 
   const handleDeleteCompany = (company: Company) => {
     remove(company.id)
@@ -50,7 +50,7 @@ const CompanyListPage: React.FC = () => {
         });
         fetchCompanies();
       })
-      .catch((err) => {
+      .catch(() => {
         setNotification({
           message: deleteError
             ? deleteError
@@ -177,42 +177,42 @@ const CompanyListPage: React.FC = () => {
               </button>
             </div>
             <nav className="flex-1 px-4 pb-4 space-y-1">
-              <a
+              <Link
                 href="/"
                 className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-md"
               >
                 <IconHome size={16} className="mr-3" />
                 Dashboard
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/companies"
                 className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
               >
                 <IconBuilding size={16} className="mr-3" />
                 Companies
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/events"
                 className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
               >
                 <IconCalendar size={16} className="mr-3" />
                 Events
-              </a>
+              </Link>
               <div className="border-t border-gray-200 my-4"></div>
-              <a
+              <Link
                 href="/settings"
                 className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
               >
                 <IconSettings size={16} className="mr-3" />
                 Settings
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/logout"
                 className="flex items-center px-3 py-2 text-sm font-medium text-red-700 hover:text-red-900 hover:bg-red-50 rounded-md"
               >
                 <IconLogout size={16} className="mr-3" />
                 Logout
-              </a>
+              </Link>
             </nav>
           </div>
         </div>

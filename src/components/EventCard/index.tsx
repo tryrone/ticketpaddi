@@ -9,6 +9,7 @@ import {
   IconClock,
 } from "@tabler/icons-react";
 import { Event } from "@/types/event";
+import Image from "next/image";
 
 interface EventCardProps {
   event: Event;
@@ -55,9 +56,9 @@ const EventCard: React.FC<EventCardProps> = ({ event, onFavorite, onView }) => {
     >
       {/* Event Image */}
       <div className="relative h-48 overflow-hidden">
-        <img
+        <Image
           src={event.image}
-          alt={event.title}
+          alt="event image"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
 

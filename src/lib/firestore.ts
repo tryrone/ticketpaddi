@@ -12,7 +12,6 @@ import {
   limit,
   startAfter,
   DocumentSnapshot,
-  QueryConstraint,
   increment,
 } from "firebase/firestore";
 import { db } from "./firebase";

@@ -1,11 +1,7 @@
 import React from "react";
 
 export enum FontFamily {
-  AKTIFO_A_LIGHT = "Aktifo-A",
   AKTIFO_A_BOOK = "Aktifo-A",
-  AKTIFO_A_SEMI_BOLD = "Aktifo-A",
-  AKTIFO_A_BOLD = "Aktifo-A",
-  AKTIFO_A_MEDIUM = "Aktifo-A",
 }
 
 export interface TextProps {

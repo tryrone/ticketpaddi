@@ -67,5 +67,5 @@ export const migrateToFirestore = async () => {
 
 // Helper function to run migration from browser console
 if (typeof window !== "undefined") {
-  (window as any).migrateToFirestore = migrateToFirestore;
+  (window as AnyType).migrateToFirestore = migrateToFirestore;
 }

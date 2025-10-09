@@ -20,14 +20,14 @@ const returnFontSizeBasedOnUIFont = (
   if (UIFont === UIFonts.label_bold) {
     return {
       fontSize: 14,
-      fontFamily: FontFamily.AKTIFO_A_MEDIUM,
+      fontFamily: FontFamily.AKTIFO_A_BOOK,
       fontWeight: 500,
     };
   }
   if (UIFont === UIFonts.title) {
     return {
       fontSize: 18,
-      fontFamily: FontFamily.AKTIFO_A_MEDIUM,
+      fontFamily: FontFamily.AKTIFO_A_BOOK,
       fontWeight: 500,
     };
   }

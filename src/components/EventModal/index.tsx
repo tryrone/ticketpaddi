@@ -2,8 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  IconX,
-  IconArrowLeft,
   IconUpload,
   IconDots,
   IconCalendar,
