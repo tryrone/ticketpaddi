@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy": "firebase deploy --only hosting:ticketpaddi"
   },
   "dependencies": {
     "@mantine/core": "^8.3.3",
