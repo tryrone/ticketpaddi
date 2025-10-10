@@ -19,13 +19,7 @@ import { Event } from "@/types/event";
 import { useCompany, useEventsByCompany } from "@/hooks/useFirestore";
 import { Select } from "@mantine/core";
 
-interface CompanyDetailClientProps {
-  companyId: string;
-}
-
-const CompanyDetailClient: React.FC<CompanyDetailClientProps> = ({
-  companyId: propCompanyId,
-}) => {
+const CompanyDetailClient = () => {
   const params = useParams();
   const companyId = params.id as string;
 

@@ -8,14 +8,6 @@ export async function generateStaticParams() {
   }));
 }
 
-export default async function CompanyDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const { id } = await params;
-  const companyId = id || "";
-
-  console.log("companyId", companyId);
-  return <CompanyDetailClient companyId={companyId} />;
+export default async function CompanyDetailPage() {
+  return <CompanyDetailClient />;
 }

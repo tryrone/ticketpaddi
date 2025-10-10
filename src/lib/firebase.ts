@@ -14,9 +14,9 @@ const isFirebaseConfigured = () => {
   );
 };
 
-let app: any = null;
-let db: any = null;
-let auth: any = null;
+let app: AnyType = null;
+let db: AnyType = null;
+let auth: AnyType = null;
 
 if (isFirebaseConfigured()) {
   const firebaseConfig = {
