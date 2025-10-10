@@ -221,7 +221,7 @@ const CompanyListPage: React.FC = () => {
       <CompanyModal
         isOpen={isOpen}
         onClose={closeModal}
-        onSuccess={(company) => {
+        onSuccess={() => {
           fetchCompanies();
         }}
       />

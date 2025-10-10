@@ -18,6 +18,15 @@ import { db } from "./firebase";
 import { Company } from "@/types/company";
 import { Event } from "@/types/event";
 
+// Helper function to check if Firebase is available
+const checkFirebaseConnection = () => {
+  if (!db) {
+    throw new Error(
+      "Firebase is not configured. Please set up your environment variables."
+    );
+  }
+};
+
 // Collection names
 const COMPANIES_COLLECTION = "ticket-companies";
 const EVENTS_COLLECTION = "ticketed-events";
@@ -25,6 +34,7 @@ const EVENTS_COLLECTION = "ticketed-events";
 // Company operations
 export const getCompanies = async (): Promise<Company[]> => {
   try {
+    checkFirebaseConnection();
     const companiesRef = collection(db, COMPANIES_COLLECTION);
     const snapshot = await getDocs(companiesRef);
     return snapshot.docs.map(
@@ -42,6 +52,7 @@ export const getCompanies = async (): Promise<Company[]> => {
 
 export const getCompanyById = async (id: string): Promise<Company | null> => {
   try {
+    checkFirebaseConnection();
     const companyRef = doc(db, COMPANIES_COLLECTION, id);
     const companySnap = await getDoc(companyRef);
 
@@ -62,6 +73,7 @@ export const createCompany = async (
   companyData: Omit<Company, "id">
 ): Promise<string> => {
   try {
+    checkFirebaseConnection();
     const companiesRef = collection(db, COMPANIES_COLLECTION);
     const docRef = await addDoc(companiesRef, companyData);
     return docRef.id;
