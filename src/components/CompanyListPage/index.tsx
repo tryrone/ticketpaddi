@@ -18,6 +18,7 @@ import { useCompanyModal } from "@/hooks/useCompanyModal";
 import { Company } from "@/types/company";
 import { useCompanies, useDeleteCompany } from "@/hooks/useFirestore";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const CompanyListPage: React.FC = () => {
   const [opened, setOpened] = useState(false);
@@ -36,6 +37,8 @@ const CompanyListPage: React.FC = () => {
   // delete company hook
   const { remove, error: deleteError } = useDeleteCompany();
 
+  const router = useRouter();
+
   const toggle = () => setOpened(!opened);
   const close = () => setOpened(false);
 
@@ -44,10 +47,6 @@ const CompanyListPage: React.FC = () => {
   const handleDeleteCompany = (company: Company) => {
     remove(company.id)
       .then(() => {
-        setNotification({
-          message: `${company.name} deleted successfully`,
-          type: "success",
-        });
         fetchCompanies();
       })
       .catch(() => {
@@ -61,7 +60,7 @@ const CompanyListPage: React.FC = () => {
   };
 
   const handleViewCompany = (company: Company) => {
-    window.location.href = `/company/${company.id}`;
+    router.push(`/company/${company.id}`);
   };
 
   const totalEvents = companies.reduce(
@@ -223,10 +222,6 @@ const CompanyListPage: React.FC = () => {
         isOpen={isOpen}
         onClose={closeModal}
         onSuccess={(company) => {
-          setNotification({
-            message: `${company.name} created successfully`,
-            type: "success",
-          });
           fetchCompanies();
         }}
       />

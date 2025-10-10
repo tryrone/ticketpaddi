@@ -19,23 +19,29 @@ import { Event } from "@/types/event";
 import { useCompany, useEventsByCompany } from "@/hooks/useFirestore";
 import { Select } from "@mantine/core";
 
-const CompanyDetailClient: React.FC = () => {
+interface CompanyDetailClientProps {
+  companyId: string;
+}
+
+const CompanyDetailClient: React.FC<CompanyDetailClientProps> = ({
+  companyId: propCompanyId,
+}) => {
   const params = useParams();
   const companyId = params.id as string;
 
-  // Use Firestore hooks
+  // Use Firestore hooks only if we have a valid companyId
   const {
     company,
     loading: companyLoading,
     error: companyError,
     fetchCompany,
-  } = useCompany(companyId);
+  } = useCompany(companyId || "");
 
   const {
     events,
     loading: eventsLoading,
     error: eventsError,
-  } = useEventsByCompany(companyId);
+  } = useEventsByCompany(companyId || "");
 
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -109,15 +115,30 @@ const CompanyDetailClient: React.FC = () => {
     setFilteredEvents(filtered);
   }, [events, searchTerm, priceRange, category, sortBy]);
 
-  // const handleFavorite = (event: Event) => {
-  //   setFavorites((prev) => {
-  //     if (prev.includes(event.id)) {
-  //       return prev.filter((id) => id !== event.id);
-  //     } else {
-  //       return [...prev, event.id];
-  //     }
-  //   });
-  // };
+  // If no companyId is available, show error
+  if (!companyId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <IconBuilding size={48} className="mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Invalid Company ID
+          </h2>
+          <p className="text-gray-600 mb-4">
+            No company ID was found in the URL.
+          </p>
+          <button
+            onClick={() => window.history.back()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleViewEvent = (event: Event) => {
     // Navigate to event detail page
