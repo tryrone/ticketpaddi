@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { MantineProvider } from "@mantine/core";
-import { Notifications } from "@mantine/notifications";
+import Providers from "@/components/Providers";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "./globals.css";
@@ -41,10 +40,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <MantineProvider>
-          <Notifications />
-          {children}
-        </MantineProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

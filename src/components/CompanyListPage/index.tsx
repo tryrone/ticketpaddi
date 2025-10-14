@@ -17,8 +17,12 @@ import CompanyModal from "../CompanyModal";
 import { useCompanyModal } from "@/hooks/useCompanyModal";
 import { Company } from "@/types/company";
 import { useCompanies, useDeleteCompany } from "@/hooks/useFirestore";
+import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Menu } from "@mantine/core";
+import { User as FirebaseUser } from "firebase/auth";
 
 const CompanyListPage: React.FC = () => {
   const [opened, setOpened] = useState(false);
@@ -37,10 +41,22 @@ const CompanyListPage: React.FC = () => {
   // delete company hook
   const { remove, error: deleteError } = useDeleteCompany();
 
+  // Auth hook
+  const { signOut, userProfile, user } = useAuth();
+
   const router = useRouter();
 
   const toggle = () => setOpened(!opened);
   const close = () => setOpened(false);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   const handleEditCompany = () => {};
 
@@ -61,6 +77,11 @@ const CompanyListPage: React.FC = () => {
 
   const handleViewCompany = (company: Company) => {
     router.push(`/company/${company.id}`);
+  };
+
+  const logOut = () => {
+    signOut();
+    router.push("/");
   };
 
   const totalEvents = companies.reduce(
@@ -134,11 +155,39 @@ const CompanyListPage: React.FC = () => {
               </button>
 
               {/* User Avatar */}
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <IconUser size={16} className="text-white" />
-                </div>
-              </div>
+              <Menu>
+                <Menu.Target>
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    {userProfile?.photoURL || user?.photoURL ? (
+                      <Image
+                        src={userProfile?.photoURL || user?.photoURL || ""}
+                        alt={userProfile?.displayName || user?.email || "User"}
+                        className="w-8 h-8 rounded-full object-cover"
+                        width={32}
+                        height={32}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                        <IconUser size={16} className="text-white" />
+                      </div>
+                    )}
+                    <span className="hidden md:block text-sm font-medium text-gray-700">
+                      {userProfile?.displayName ||
+                        user?.email?.split("@")[0] ||
+                        "User"}
+                    </span>
+                  </div>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Item onClick={logOut}>
+                    <div className="flex items-center gap-2">
+                      <IconLogout size={16} />
+                      Logout
+                    </div>
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             </div>
           </div>
         </div>
@@ -205,13 +254,13 @@ const CompanyListPage: React.FC = () => {
                 <IconSettings size={16} className="mr-3" />
                 Settings
               </Link>
-              <Link
-                href="/logout"
-                className="flex items-center px-3 py-2 text-sm font-medium text-red-700 hover:text-red-900 hover:bg-red-50 rounded-md"
+              <button
+                onClick={handleSignOut}
+                className="flex w-full items-center px-3 py-2 text-sm font-medium text-red-700 hover:text-red-900 hover:bg-red-50 rounded-md"
               >
                 <IconLogout size={16} className="mr-3" />
                 Logout
-              </Link>
+              </button>
             </nav>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 // Check if Firebase is properly configured
 const isFirebaseConfigured = () => {
@@ -17,6 +18,7 @@ const isFirebaseConfigured = () => {
 let app: AnyType = null;
 let db: AnyType = null;
 let auth: AnyType = null;
+let storage: AnyType = null;
 
 if (isFirebaseConfigured()) {
   const firebaseConfig = {
@@ -38,11 +40,12 @@ if (isFirebaseConfigured()) {
   // Initialize Firebase services
   db = getFirestore(app);
   auth = getAuth(app);
+  storage = getStorage(app);
 } else {
   console.warn(
     "Firebase configuration is incomplete. Please set up your environment variables."
   );
 }
 
-export { db, auth };
+export { db, auth, storage };
 export default app;

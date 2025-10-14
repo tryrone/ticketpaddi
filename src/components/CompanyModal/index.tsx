@@ -1,19 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  //   IconX,
-  //   IconArrowLeft,
-  IconUpload,
-  IconDots,
-  //   IconBrandInstagram,
-  //   IconBrandTiktok,
-  //   IconBrandFacebook,
-  //   IconWorld,
-} from "@tabler/icons-react";
+import { IconUpload, IconDots } from "@tabler/icons-react";
 import { useCreateCompany } from "@/hooks/useFirestore";
 import { Company } from "@/types/company";
 import { Modal } from "@mantine/core";
+import { User as FirebaseUser } from "firebase/auth";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CompanyModalProps {
   isOpen: boolean;
@@ -39,6 +32,8 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
 
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { user } = useAuth();
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -109,6 +104,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
         location: formData.location,
         lastEventDate: new Date().toISOString(),
         description: formData.description,
+        userId: user?.uid as FirebaseUser["uid"],
       };
 
       const companyId = await create(companyData);

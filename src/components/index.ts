@@ -3,3 +3,8 @@ export { default as Text } from "./Text";
 export { default as CompanyTable } from "./CompanyTable";
 export { default as CompanyListPage } from "./CompanyListPage";
 export { default as EventCard } from "./EventCard";
+export { default as CompanyModal } from "./CompanyModal";
+export { default as AuthPage } from "./AuthPage";
+export { default as Providers } from "./Providers";
+export { default as ProtectedRoute } from "./ProtectedRoute";
+export { default as ImageUploader } from "./ImageUploader";

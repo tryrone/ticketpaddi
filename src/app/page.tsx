@@ -1,5 +1,5 @@
-import CompanyListPage from "@/components/CompanyListPage";
+import AuthPage from "@/components/AuthPage";
 
 export default function Home() {
-  return <CompanyListPage />;
+  return <AuthPage />;
 }

@@ -17,6 +17,8 @@ import {
   deleteCompany,
   deleteEvent,
 } from "@/lib/firestore";
+import { User as FirebaseUser } from "firebase/auth";
+import { useAuth } from "./useAuth";
 
 // Company hooks
 export const useCompanies = () => {
@@ -24,10 +26,12 @@ export const useCompanies = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { user } = useAuth();
+
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const data = await getCompanies();
+      const data = await getCompanies(user?.uid as FirebaseUser["uid"]);
       setCompanies(data);
       setError(null);
     } catch (err) {
@@ -41,7 +45,7 @@ export const useCompanies = () => {
 
   useEffect(() => {
     fetchCompanies();
-  }, []);
+  }, [user]);
 
   return { companies, loading, error, fetchCompanies };
 };

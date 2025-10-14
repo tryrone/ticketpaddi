@@ -17,6 +17,7 @@ import {
 import { db } from "./firebase";
 import { Company } from "@/types/company";
 import { Event } from "@/types/event";
+import { User as FirebaseUser } from "firebase/auth";
 
 // Helper function to check if Firebase is available
 const checkFirebaseConnection = () => {
@@ -32,18 +33,22 @@ const COMPANIES_COLLECTION = "ticket-companies";
 const EVENTS_COLLECTION = "ticketed-events";
 
 // Company operations
-export const getCompanies = async (): Promise<Company[]> => {
+export const getCompanies = async (
+  userId: FirebaseUser["uid"] | null
+): Promise<Company[]> => {
   try {
     checkFirebaseConnection();
     const companiesRef = collection(db, COMPANIES_COLLECTION);
     const snapshot = await getDocs(companiesRef);
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        } as Company)
-    );
+    return snapshot.docs
+      .map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+          } as Company)
+      )
+      .filter((company) => company.userId === userId);
   } catch (error) {
     console.error("Error fetching companies:", error);
     throw error;

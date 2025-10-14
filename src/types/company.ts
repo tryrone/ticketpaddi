@@ -7,13 +7,7 @@ export interface Company {
   location?: string;
   lastEventDate?: string;
   description?: string;
-  // industry?: string;
-  // socials?: {
-  //   instagram?: string;
-  //   tiktok?: string;
-  //   facebook?: string;
-  //   website?: string;
-  // };
+  userId: string;
 }
 
 export interface CompanyTableProps {

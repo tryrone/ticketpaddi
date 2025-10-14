@@ -15,6 +15,7 @@ import { useCreateEvent } from "@/hooks/useFirestore";
 import { Event } from "@/types/event";
 import { Company } from "@/types/company";
 import { Modal } from "@mantine/core";
+import { generateUniqueFilename, uploadImageWithProgress } from "@/lib/storage";
 
 interface EventModalProps {
   isOpen: boolean;
@@ -121,6 +122,16 @@ const EventModal: React.FC<EventModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const uploadImageToFGoogle = async (file: File) => {
+    const result = await uploadImageWithProgress(
+      file,
+      "ticketed-events",
+      generateUniqueFilename(file.name, "event"),
+      (progress) => console.log(`Upload: ${progress}%`)
+    );
+    return result.url;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -132,7 +143,7 @@ const EventModal: React.FC<EventModalProps> = ({
       // Convert image to base64 if present
       let imageUrl = "";
       if (formData.image) {
-        imageUrl = await convertFileToBase64(formData.image);
+        imageUrl = await uploadImageToFGoogle(formData.image);
       }
 
       // Parse tags from comma-separated string
