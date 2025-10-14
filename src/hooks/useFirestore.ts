@@ -45,7 +45,7 @@ export const useCompanies = () => {
 
   useEffect(() => {
     fetchCompanies();
-  }, [user]);
+  }, [user, fetchCompanies]);
 
   return { companies, loading, error, fetchCompanies };
 };

@@ -22,7 +22,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Menu } from "@mantine/core";
-import { User as FirebaseUser } from "firebase/auth";
 
 const CompanyListPage: React.FC = () => {
   const [opened, setOpened] = useState(false);

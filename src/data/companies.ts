@@ -9,6 +9,7 @@ export const mockCompanies: Company[] = [
     status: "active",
     location: "San Francisco, CA",
     lastEventDate: "2024-01-15",
+    userId: "1",
   },
   {
     id: "2",
@@ -18,6 +19,7 @@ export const mockCompanies: Company[] = [
     status: "active",
     location: "New York, NY",
     lastEventDate: "2024-01-12",
+    userId: "1",
   },
   {
     id: "3",
@@ -27,6 +29,7 @@ export const mockCompanies: Company[] = [
     status: "active",
     location: "Austin, TX",
     lastEventDate: "2024-01-14",
+    userId: "1",
   },
   {
     id: "4",
@@ -36,6 +39,7 @@ export const mockCompanies: Company[] = [
     status: "inactive",
     location: "Chicago, IL",
     lastEventDate: "2023-12-20",
+    userId: "1",
   },
   {
     id: "5",
@@ -45,6 +49,7 @@ export const mockCompanies: Company[] = [
     status: "active",
     location: "Seattle, WA",
     lastEventDate: "2024-01-10",
+    userId: "1",
   },
   {
     id: "6",
@@ -54,6 +59,7 @@ export const mockCompanies: Company[] = [
     status: "pending",
     location: "Los Angeles, CA",
     lastEventDate: "2024-01-08",
+    userId: "1",
   },
   {
     id: "7",
@@ -64,6 +70,7 @@ export const mockCompanies: Company[] = [
 
     location: "Miami, FL",
     lastEventDate: "2024-01-13",
+    userId: "1",
   },
   {
     id: "8",
@@ -73,5 +80,6 @@ export const mockCompanies: Company[] = [
     status: "active",
     location: "Denver, CO",
     lastEventDate: "2024-01-11",
+    userId: "1",
   },
 ];

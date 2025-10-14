@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import { IconUpload, IconX, IconCheck } from "@tabler/icons-react";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import Image from "next/image";
 
 interface ImageUploaderProps {
   folder?: string;
@@ -121,7 +122,7 @@ export default function ImageUploader({
       ) : (
         /* Preview Area */
         <div className="relative">
-          <img
+          <Image
             src={preview}
             alt="Preview"
             className="h-48 w-full rounded-lg object-cover"
