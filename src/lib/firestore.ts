@@ -17,6 +17,8 @@ import {
 import { db } from "./firebase";
 import { Company } from "@/types/company";
 import { Event } from "@/types/event";
+import { Booking } from "@/types/booking";
+import { Message, Conversation } from "@/types/message";
 import { User as FirebaseUser } from "firebase/auth";
 
 // Helper function to check if Firebase is available
@@ -31,6 +33,9 @@ const checkFirebaseConnection = () => {
 // Collection names
 const COMPANIES_COLLECTION = "ticket-companies";
 const EVENTS_COLLECTION = "ticketed-events";
+const BOOKINGS_COLLECTION = "bookings";
+const MESSAGES_COLLECTION = "messages";
+const CONVERSATIONS_COLLECTION = "conversations";
 
 // Company operations
 export const getCompanies = async (
@@ -309,6 +314,314 @@ export const getEventsPaginated = async (
     };
   } catch (error) {
     console.error("Error fetching paginated events:", error);
+    throw error;
+  }
+};
+
+// Booking operations
+export const createBooking = async (
+  bookingData: Omit<Booking, "id">
+): Promise<string> => {
+  try {
+    checkFirebaseConnection();
+    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
+    const docRef = await addDoc(bookingsRef, bookingData);
+    return docRef.id;
+  } catch (error) {
+    console.error("Error creating booking:", error);
+    throw error;
+  }
+};
+
+export const getBookingById = async (id: string): Promise<Booking | null> => {
+  try {
+    checkFirebaseConnection();
+    const bookingRef = doc(db, BOOKINGS_COLLECTION, id);
+    const bookingSnap = await getDoc(bookingRef);
+
+    if (bookingSnap.exists()) {
+      return {
+        id: bookingSnap.id,
+        ...bookingSnap.data(),
+      } as Booking;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching booking:", error);
+    throw error;
+  }
+};
+
+export const getBookingsByCompany = async (
+  companyId: string
+): Promise<Booking[]> => {
+  try {
+    checkFirebaseConnection();
+    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
+    const q = query(bookingsRef, where("companyId", "==", companyId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as Booking)
+    );
+  } catch (error) {
+    console.error("Error fetching bookings by company:", error);
+    throw error;
+  }
+};
+
+export const getBookingsByUser = async (userId: string): Promise<Booking[]> => {
+  try {
+    checkFirebaseConnection();
+    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
+    const q = query(bookingsRef, where("bookerUserId", "==", userId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as Booking)
+    );
+  } catch (error) {
+    console.error("Error fetching bookings by user:", error);
+    throw error;
+  }
+};
+
+export const getBookingsByEvent = async (
+  eventId: string
+): Promise<Booking[]> => {
+  try {
+    checkFirebaseConnection();
+    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
+    const q = query(bookingsRef, where("eventId", "==", eventId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as Booking)
+    );
+  } catch (error) {
+    console.error("Error fetching bookings by event:", error);
+    throw error;
+  }
+};
+
+export const getBookingsByDateRange = async (
+  companyId: string,
+  startDate: string,
+  endDate: string
+): Promise<Booking[]> => {
+  try {
+    checkFirebaseConnection();
+    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
+    const q = query(
+      bookingsRef,
+      where("companyId", "==", companyId),
+      where("bookedDate", ">=", startDate),
+      where("bookedDate", "<=", endDate)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as Booking)
+    );
+  } catch (error) {
+    console.error("Error fetching bookings by date range:", error);
+    throw error;
+  }
+};
+
+export const updateBooking = async (
+  id: string,
+  bookingData: Partial<Booking>
+): Promise<void> => {
+  try {
+    checkFirebaseConnection();
+    const bookingRef = doc(db, BOOKINGS_COLLECTION, id);
+    await updateDoc(bookingRef, {
+      ...bookingData,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error updating booking:", error);
+    throw error;
+  }
+};
+
+export const deleteBooking = async (id: string): Promise<void> => {
+  try {
+    checkFirebaseConnection();
+    const bookingRef = doc(db, BOOKINGS_COLLECTION, id);
+    await deleteDoc(bookingRef);
+  } catch (error) {
+    console.error("Error deleting booking:", error);
+    throw error;
+  }
+};
+
+// Check if a date is already booked for a specific event
+export const isDateBooked = async (
+  eventId: string,
+  date: string
+): Promise<boolean> => {
+  try {
+    checkFirebaseConnection();
+    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
+    const q = query(
+      bookingsRef,
+      where("eventId", "==", eventId),
+      where("bookedDate", "==", date),
+      where("status", "in", ["confirmed", "pending"])
+    );
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  } catch (error) {
+    console.error("Error checking if date is booked:", error);
+    throw error;
+  }
+};
+
+// Message operations
+export const createMessage = async (
+  messageData: Omit<Message, "id">
+): Promise<string> => {
+  try {
+    checkFirebaseConnection();
+    const messagesRef = collection(db, MESSAGES_COLLECTION);
+    const docRef = await addDoc(messagesRef, messageData);
+
+    // Update conversation with last message
+    const conversationRef = collection(db, CONVERSATIONS_COLLECTION);
+    const q = query(
+      conversationRef,
+      where("bookingId", "==", messageData.bookingId)
+    );
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const conversationDoc = snapshot.docs[0];
+      await updateDoc(doc(db, CONVERSATIONS_COLLECTION, conversationDoc.id), {
+        lastMessage: messageData.message,
+        lastMessageTime: messageData.timestamp,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    return docRef.id;
+  } catch (error) {
+    console.error("Error creating message:", error);
+    throw error;
+  }
+};
+
+export const getMessagesByBooking = async (
+  bookingId: string
+): Promise<Message[]> => {
+  try {
+    checkFirebaseConnection();
+    const messagesRef = collection(db, MESSAGES_COLLECTION);
+    const q = query(
+      messagesRef,
+      where("bookingId", "==", bookingId),
+      orderBy("timestamp", "asc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as Message)
+    );
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+    throw error;
+  }
+};
+
+export const markMessageAsRead = async (messageId: string): Promise<void> => {
+  try {
+    checkFirebaseConnection();
+    const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
+    await updateDoc(messageRef, { read: true });
+  } catch (error) {
+    console.error("Error marking message as read:", error);
+    throw error;
+  }
+};
+
+// Conversation operations
+export const createConversation = async (
+  conversationData: Omit<Conversation, "id">
+): Promise<string> => {
+  try {
+    checkFirebaseConnection();
+    const conversationsRef = collection(db, CONVERSATIONS_COLLECTION);
+    const docRef = await addDoc(conversationsRef, conversationData);
+    return docRef.id;
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+    throw error;
+  }
+};
+
+export const getConversationsByUser = async (
+  userId: string,
+  userType: "owner" | "booker"
+): Promise<Conversation[]> => {
+  try {
+    checkFirebaseConnection();
+    const conversationsRef = collection(db, CONVERSATIONS_COLLECTION);
+    const field =
+      userType === "owner" ? "participants.ownerId" : "participants.bookerId";
+    const q = query(
+      conversationsRef,
+      where(field, "==", userId),
+      orderBy("updatedAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as Conversation)
+    );
+  } catch (error) {
+    console.error("Error fetching conversations:", error);
+    throw error;
+  }
+};
+
+export const getConversationByBooking = async (
+  bookingId: string
+): Promise<Conversation | null> => {
+  try {
+    checkFirebaseConnection();
+    const conversationsRef = collection(db, CONVERSATIONS_COLLECTION);
+    const q = query(conversationsRef, where("bookingId", "==", bookingId));
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      return {
+        id: doc.id,
+        ...doc.data(),
+      } as Conversation;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching conversation:", error);
     throw error;
   }
 };

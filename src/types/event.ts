@@ -16,4 +16,6 @@ export interface Event {
   status: "upcoming" | "ongoing" | "completed" | "cancelled";
   tags: string[];
   featured: boolean;
+  isTemplate?: boolean; // True if this is a template that can be applied to multiple dates
+  availableDates?: string[]; // Array of dates this template is available for
 }

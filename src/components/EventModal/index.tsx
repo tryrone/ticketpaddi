@@ -16,6 +16,7 @@ import { Event } from "@/types/event";
 import { Company } from "@/types/company";
 import { Modal } from "@mantine/core";
 import { generateUniqueFilename, uploadImageWithProgress } from "@/lib/storage";
+import { useImageUpload } from "@/hooks/useImageUpload";
 
 interface EventModalProps {
   isOpen: boolean;
@@ -46,10 +47,13 @@ const EventModal: React.FC<EventModalProps> = ({
     maxAttendees: "",
     tags: "",
     featured: false,
+    isTemplate: false,
   });
 
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { uploadImageWithProgress } = useImageUpload();
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -122,15 +126,15 @@ const EventModal: React.FC<EventModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const uploadImageToFGoogle = async (file: File) => {
-    const result = await uploadImageWithProgress(
-      file,
-      "ticketed-events",
-      generateUniqueFilename(file.name, "event"),
-      (progress) => console.log(`Upload: ${progress}%`)
-    );
-    return result.url;
-  };
+  // const uploadImageToFGoogle = async (file: File) => {
+  //   const result = await uploadImageWithProgress(
+  //     file,
+  //     "ticketed-events",
+  //     generateUniqueFilename(file.name, "event"),
+  //     (progress) => console.log(`Upload: ${progress}%`)
+  //   );
+  //   return result.url;
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +147,10 @@ const EventModal: React.FC<EventModalProps> = ({
       // Convert image to base64 if present
       let imageUrl = "";
       if (formData.image) {
-        imageUrl = await uploadImageToFGoogle(formData.image);
+        const result = await uploadImageWithProgress(formData.image);
+        if (result) {
+          imageUrl = result.url;
+        }
       }
 
       // Parse tags from comma-separated string
@@ -171,6 +178,7 @@ const EventModal: React.FC<EventModalProps> = ({
         status: "upcoming" as const,
         tags: tagsArray,
         featured: formData.featured,
+        isTemplate: formData.isTemplate,
       };
 
       const eventId = await create(eventData);
@@ -198,6 +206,7 @@ const EventModal: React.FC<EventModalProps> = ({
         maxAttendees: "",
         tags: "",
         featured: false,
+        isTemplate: false,
       });
       setCurrentStep(1);
       setErrors({});
@@ -520,7 +529,7 @@ const EventModal: React.FC<EventModalProps> = ({
             </div>
 
             {/* Featured Event */}
-            <div className="mb-8">
+            <div className="mb-4">
               <label className="flex items-center">
                 <input
                   type="checkbox"
@@ -532,6 +541,28 @@ const EventModal: React.FC<EventModalProps> = ({
                 <span className="text-sm font-medium text-gray-900">
                   Feature this event (show in featured section)
                 </span>
+              </label>
+            </div>
+
+            {/* Template Event */}
+            <div className="mb-8">
+              <label className="flex items-start">
+                <input
+                  type="checkbox"
+                  name="isTemplate"
+                  checked={formData.isTemplate}
+                  onChange={handleInputChange}
+                  className="mr-3 mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900 block">
+                    Make this a booking template
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Customers can book this event on multiple available dates.
+                    Perfect for recurring services or bookings.
+                  </span>
+                </div>
               </label>
             </div>
           </>
