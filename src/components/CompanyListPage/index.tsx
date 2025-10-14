@@ -77,11 +77,6 @@ const CompanyListPage: React.FC = () => {
     router.push(`/company/${company.id}`);
   };
 
-  const logOut = () => {
-    signOut();
-    router.push("/");
-  };
-
   const totalEvents = companies.reduce(
     (sum, company) => sum + (company?.numberOfEvents || 0),
     0

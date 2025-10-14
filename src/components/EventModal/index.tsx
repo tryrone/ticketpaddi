@@ -238,7 +238,7 @@ const EventModal: React.FC<EventModalProps> = ({
         featured: formData.featured,
       };
 
-      let eventData: any = { ...baseEventData };
+      let eventData: AnyType = { ...baseEventData };
 
       if (eventType === "event") {
         eventData = {

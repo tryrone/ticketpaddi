@@ -5,7 +5,6 @@ import {
   getDownloadURL,
   deleteObject,
   UploadTask,
-  getStorage,
 } from "firebase/storage";
 import { storage } from "./firebase";
 

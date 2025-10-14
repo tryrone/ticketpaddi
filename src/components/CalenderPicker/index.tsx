@@ -1,8 +1,8 @@
 "use client";
 import { DatePicker } from "@mantine/dates";
-import { useState } from "react";
+import React from "react";
 import Text from "@/components/Text";
-import { Button, Menu } from "@mantine/core";
+import { Menu } from "@mantine/core";
 import { IconCalendar } from "@tabler/icons-react";
 
 interface CalenderPickerProps {

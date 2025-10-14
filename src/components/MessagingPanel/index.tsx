@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Message, Conversation } from "@/types/message";
+import { Conversation } from "@/types/message";
 import { useMessagesByBooking, useSendMessage } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import {

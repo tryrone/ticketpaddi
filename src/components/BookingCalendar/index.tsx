@@ -13,6 +13,7 @@ import {
   IconCheck,
   IconX,
 } from "@tabler/icons-react";
+import Image from "next/image";
 
 interface BookingCalendarProps {
   bookings: Booking[];
@@ -149,7 +150,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             </div>
             {hasBookings && (
               <div className="flex-1 overflow-hidden">
-                {dayBookings.slice(0, 2).map((booking, idx) => (
+                {dayBookings.slice(0, 2).map((booking) => (
                   <div
                     key={booking.id}
                     className="text-xs truncate mb-1 px-1 py-0.5 bg-green-600 text-white rounded"
@@ -273,7 +274,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
               {selectedBooking ? (
                 <div className="space-y-4">
                   <div>
-                    <img
+                    <Image
                       src={selectedBooking.eventImage}
                       alt={selectedBooking.eventTitle}
                       className="w-full h-40 object-cover rounded-lg mb-3"

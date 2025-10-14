@@ -97,7 +97,7 @@ export const BasicInfoFields: React.FC<BasicInfoFieldsProps> = ({
                       e.stopPropagation();
                       onInputChange({
                         target: { name: "image", value: null },
-                      } as any);
+                      } as AnyType);
                     }}
                     className="text-gray-400 hover:text-gray-600"
                   >

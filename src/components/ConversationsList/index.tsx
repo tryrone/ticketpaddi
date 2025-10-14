@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Conversation } from "@/types/message";
-import { IconMessage, IconCircle, IconChevronRight } from "@tabler/icons-react";
+import { IconMessage, IconChevronRight } from "@tabler/icons-react";
 
 interface ConversationsListProps {
   conversations: Conversation[];

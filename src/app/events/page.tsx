@@ -14,6 +14,7 @@ import {
   IconUsers,
   IconTag,
 } from "@tabler/icons-react";
+import Image from "next/image";
 
 export default function EventsPage() {
   const { events, loading, error } = useEvents();
@@ -174,9 +175,9 @@ export default function EventsPage() {
               >
                 {/* Event Image */}
                 <div className="relative h-48 overflow-hidden">
-                  <img
+                  <Image
                     src={event.image}
-                    alt={event.title}
+                    alt={event.title || "Event Image"}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   />
                   {event.isTemplate && (

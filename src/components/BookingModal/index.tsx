@@ -16,6 +16,7 @@ import {
   IconPhone,
   IconFileText,
 } from "@tabler/icons-react";
+import Image from "next/image";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -200,9 +201,9 @@ const BookingModal: React.FC<BookingModalProps> = ({
         {/* Event Info */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-start space-x-3">
-            <img
+            <Image
               src={event.image}
-              alt={event.title}
+              alt={event.title || "Event Image"}
               className="w-20 h-20 object-cover rounded-lg"
             />
             <div className="flex-1">

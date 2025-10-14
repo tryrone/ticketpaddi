@@ -2,7 +2,6 @@ import React from "react";
 import { IconCalendar, IconUsers, IconTag } from "@tabler/icons-react";
 import { Select } from "@mantine/core";
 import { FormField } from "./FormField";
-import { DatePicker, TimePicker } from "@mantine/dates";
 import { SeatRange } from "@/types/event";
 import CalenderPicker from "../CalenderPicker";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ConversationsList from "@/components/ConversationsList";
 import MessagingPanel from "@/components/MessagingPanel";
