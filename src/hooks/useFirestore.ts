@@ -45,7 +45,7 @@ export const useCompanies = () => {
 
   useEffect(() => {
     fetchCompanies();
-  }, [user, fetchCompanies]);
+  }, [user]);
 
   return { companies, loading, error, fetchCompanies };
 };
@@ -72,7 +72,7 @@ export const useCompany = (id: string) => {
     if (!id) return;
 
     fetchCompany();
-  }, [id, fetchCompany]);
+  }, [id]);
 
   return { company, loading, error, fetchCompany };
 };
