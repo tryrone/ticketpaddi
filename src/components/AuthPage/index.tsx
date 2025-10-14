@@ -7,6 +7,7 @@ import {
   IconEye,
   IconEyeOff,
   IconUser,
+  IconTicket,
 } from "@tabler/icons-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
@@ -83,14 +84,20 @@ const AuthPage = () => {
       <div className="flex flex-1 flex-col justify-between bg-white px-8 py-12 lg:px-16">
         <div>
           {/* Logo */}
-          <div className="mb-12">
-            <h1 className="text-2xl font-bold tracking-tight">TicketPaddi</h1>
+          <div
+            className="mb-12 flex cursor-pointer"
+            onClick={() => router.push("/")}
+          >
+            <IconTicket size={32} className="text-blue-600 mr-2" />
+            <h1 className="text-2xl font-bold tracking-tight">
+              Ticket <span className="text-blue-600">Paddi</span>
+            </h1>
           </div>
 
           {/* Main Content */}
           <div className="mx-auto max-w-md">
             <h2 className="mb-2 text-4xl font-bold tracking-tight">
-              Welcome to TicketPaddi
+              Welcome to Ticket <span className="text-blue-600">Paddi</span>
             </h2>
             <p className="mb-8 text-sm text-gray-500">
               Discover and book amazing events powered by seamless ticketing
@@ -171,7 +178,7 @@ const AuthPage = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-600 py-4 text-sm font-medium text-white shadow-lg shadow-cyan-500/30 transition-all hover:shadow-xl hover:shadow-cyan-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 py-4 text-sm font-medium text-white shadow-lg shadow-cyan-500/30 transition-all hover:shadow-xl hover:shadow-cyan-500/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">

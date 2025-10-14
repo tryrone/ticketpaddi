@@ -8,6 +8,7 @@ import { useCompanies } from "@/hooks/useFirestore";
 import { Booking } from "@/types/booking";
 import { useBookingsByCompany } from "@/hooks/useBookings";
 import { IconCalendar, IconChevronDown } from "@tabler/icons-react";
+import { Select } from "@mantine/core";
 
 export default function CalendarPage() {
   const { companies, loading: companiesLoading } = useCompanies();
@@ -43,7 +44,7 @@ export default function CalendarPage() {
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-start space-x-3">
                 <IconCalendar size={32} className="text-blue-600" />
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">
@@ -55,23 +56,24 @@ export default function CalendarPage() {
 
               {/* Company Selector */}
               {companies.length > 1 && (
-                <div className="relative">
-                  <select
-                    value={defaultCompanyId || selectedCompanyId}
-                    onChange={(e) => setSelectedCompanyId(e.target.value)}
-                    className="appearance-none px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                  >
-                    {companies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
-                  <IconChevronDown
-                    size={20}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"
-                  />
-                </div>
+                <Select
+                  data={companies.map((company) => ({
+                    value: company.id,
+                    label: company.name,
+                  }))}
+                  value={defaultCompanyId || selectedCompanyId}
+                  onChange={(value) => setSelectedCompanyId(value || "")}
+                  styles={{
+                    input: {
+                      height: 43,
+                    },
+                  }}
+                  classNames={{
+                    input:
+                      "border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white font-medium",
+                  }}
+                  rightSection={<IconChevronDown size={20} />}
+                />
               )}
             </div>
 

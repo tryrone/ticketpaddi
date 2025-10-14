@@ -3,6 +3,8 @@ import Providers from "@/components/Providers";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "./globals.css";
+import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
 
 export const metadata: Metadata = {
   title: "Ticketpaddi",

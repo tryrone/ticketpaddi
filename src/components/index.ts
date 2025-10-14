@@ -13,3 +13,4 @@ export { default as MessagingPanel } from "./MessagingPanel";
 export { default as ConversationsList } from "./ConversationsList";
 export { default as BookingDetailsModal } from "./BookingDetailsModal";
 export { default as BookingModal } from "./BookingModal";
+export { default as CalenderPicker } from "./CalenderPicker";

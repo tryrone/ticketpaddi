@@ -21,7 +21,6 @@ import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Menu } from "@mantine/core";
 
 const CompanyListPage: React.FC = () => {
   const [opened, setOpened] = useState(false);
@@ -154,39 +153,27 @@ const CompanyListPage: React.FC = () => {
               </button>
 
               {/* User Avatar */}
-              <Menu>
-                <Menu.Target>
-                  <div className="flex items-center gap-2 cursor-pointer">
-                    {userProfile?.photoURL || user?.photoURL ? (
-                      <Image
-                        src={userProfile?.photoURL || user?.photoURL || ""}
-                        alt={userProfile?.displayName || user?.email || "User"}
-                        className="w-8 h-8 rounded-full object-cover"
-                        width={32}
-                        height={32}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
-                        <IconUser size={16} className="text-white" />
-                      </div>
-                    )}
-                    <span className="hidden md:block text-sm font-medium text-gray-700">
-                      {userProfile?.displayName ||
-                        user?.email?.split("@")[0] ||
-                        "User"}
-                    </span>
-                  </div>
-                </Menu.Target>
 
-                <Menu.Dropdown>
-                  <Menu.Item onClick={logOut}>
-                    <div className="flex items-center gap-2">
-                      <IconLogout size={16} />
-                      Logout
-                    </div>
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
+              <div className="flex items-center gap-2 cursor-pointer">
+                {userProfile?.photoURL || user?.photoURL ? (
+                  <Image
+                    src={userProfile?.photoURL || user?.photoURL || ""}
+                    alt={userProfile?.displayName || user?.email || "User"}
+                    className="w-8 h-8 rounded-full object-cover"
+                    width={32}
+                    height={32}
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                    <IconUser size={16} className="text-white" />
+                  </div>
+                )}
+                <span className="hidden md:block text-sm font-medium text-gray-700">
+                  {userProfile?.displayName ||
+                    user?.email?.split("@")[0] ||
+                    "User"}
+                </span>
+              </div>
             </div>
           </div>
         </div>

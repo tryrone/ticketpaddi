@@ -232,11 +232,7 @@ const CompanyDetailClient = () => {
               </div>
             </div>
 
-            {/* Filter Button */}
-            <button className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-              <IconFilter size={20} className="mr-2" />
-              Filter
-            </button>
+            <div className="flex items-center space-x-3" />
           </div>
         </div>
       </header>
