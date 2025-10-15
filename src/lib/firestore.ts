@@ -33,7 +33,6 @@ const checkFirebaseConnection = () => {
 // Collection names
 const COMPANIES_COLLECTION = "ticket-companies";
 const EVENTS_COLLECTION = "ticketed-events";
-const BOOKINGS_COLLECTION = "bookings";
 const MESSAGES_COLLECTION = "messages";
 const CONVERSATIONS_COLLECTION = "conversations";
 
@@ -318,99 +317,320 @@ export const getEventsPaginated = async (
   }
 };
 
-// Booking operations
-export const createBooking = async (
-  bookingData: Omit<Booking, "id">
-): Promise<string> => {
+// Experience operations (Experiences are events with eventType="experience")
+export const getExperiencesByCompany = async (
+  companyId: string
+): Promise<Event[]> => {
   try {
     checkFirebaseConnection();
-    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
-    const docRef = await addDoc(bookingsRef, bookingData);
-    return docRef.id;
+    const eventsRef = collection(db, EVENTS_COLLECTION);
+    const q = query(
+      eventsRef,
+      where("companyId", "==", companyId),
+      where("eventType", "==", "experience")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as Event)
+    );
   } catch (error) {
-    console.error("Error creating booking:", error);
+    console.error("Error fetching experiences by company:", error);
     throw error;
   }
 };
 
-export const getBookingById = async (id: string): Promise<Booking | null> => {
+export const getExperiencesByDateRange = async (
+  companyId: string,
+  startDate: string,
+  endDate: string
+): Promise<Event[]> => {
   try {
     checkFirebaseConnection();
-    const bookingRef = doc(db, BOOKINGS_COLLECTION, id);
-    const bookingSnap = await getDoc(bookingRef);
+    const eventsRef = collection(db, EVENTS_COLLECTION);
+    const q = query(
+      eventsRef,
+      where("companyId", "==", companyId),
+      where("eventType", "==", "experience"),
+      where("date", ">=", startDate),
+      where("date", "<=", endDate)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as Event)
+    );
+  } catch (error) {
+    console.error("Error fetching experiences by date range:", error);
+    throw error;
+  }
+};
 
-    if (bookingSnap.exists()) {
+export const getExperienceById = async (id: string): Promise<Event | null> => {
+  try {
+    checkFirebaseConnection();
+    const eventRef = doc(db, EVENTS_COLLECTION, id);
+    const eventSnap = await getDoc(eventRef);
+
+    if (eventSnap.exists() && eventSnap.data().eventType === "experience") {
       return {
-        id: bookingSnap.id,
-        ...bookingSnap.data(),
-      } as Booking;
+        id: eventSnap.id,
+        ...eventSnap.data(),
+      } as Event;
     }
     return null;
   } catch (error) {
-    console.error("Error fetching booking:", error);
+    console.error("Error fetching experience:", error);
     throw error;
   }
+};
+
+// Check for date conflicts with existing experiences
+export const checkExperienceDateConflicts = async (
+  companyId: string,
+  datesToCheck: string[],
+  excludeEventId?: string
+): Promise<{
+  hasConflict: boolean;
+  conflictingDates: string[];
+  conflictingEvents: Event[];
+}> => {
+  try {
+    checkFirebaseConnection();
+
+    if (datesToCheck.length === 0) {
+      return {
+        hasConflict: false,
+        conflictingDates: [],
+        conflictingEvents: [],
+      };
+    }
+
+    const eventsRef = collection(db, EVENTS_COLLECTION);
+    const q = query(
+      eventsRef,
+      where("companyId", "==", companyId),
+      where("eventType", "==", "experience")
+    );
+    const snapshot = await getDocs(q);
+
+    const experiences = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() } as Event))
+      .filter((event) => event.id !== excludeEventId); // Exclude current event if editing
+
+    const conflictingDates = new Set<string>();
+    const conflictingEvents: Event[] = [];
+
+    experiences.forEach((experience) => {
+      const experienceDates = new Set<string>();
+
+      // Get all dates for this experience
+      if (experience.availableDates && experience.availableDates.length > 0) {
+        experience.availableDates.forEach((date) => experienceDates.add(date));
+      } else if (experience.dateConfiguration) {
+        const config = experience.dateConfiguration;
+
+        if (config.type === "selected" && config.selectedDates) {
+          config.selectedDates.forEach((date) => experienceDates.add(date));
+        } else if (
+          config.type === "range" &&
+          config.startDate &&
+          config.endDate
+        ) {
+          const start = new Date(config.startDate);
+          const end = new Date(config.endDate);
+          const current = new Date(start);
+
+          while (current <= end) {
+            experienceDates.add(current.toISOString().split("T")[0]);
+            current.setDate(current.getDate() + 1);
+          }
+        } else if (config.type === "monthly" && config.monthlyDay) {
+          const today = new Date();
+          for (let i = 0; i < 12; i++) {
+            const date = new Date(
+              today.getFullYear(),
+              today.getMonth() + i,
+              config.monthlyDay
+            );
+            experienceDates.add(date.toISOString().split("T")[0]);
+          }
+        }
+      } else if (experience.date) {
+        experienceDates.add(experience.date);
+      }
+
+      // Check for conflicts
+      datesToCheck.forEach((date) => {
+        if (experienceDates.has(date)) {
+          conflictingDates.add(date);
+          if (!conflictingEvents.find((e) => e.id === experience.id)) {
+            conflictingEvents.push(experience);
+          }
+        }
+      });
+    });
+
+    return {
+      hasConflict: conflictingDates.size > 0,
+      conflictingDates: Array.from(conflictingDates).sort(),
+      conflictingEvents,
+    };
+  } catch (error) {
+    console.error("Error checking experience date conflicts:", error);
+    throw error;
+  }
+};
+
+// Deprecated: Kept for backward compatibility - use Event operations instead
+export const createBooking = async (
+  bookingData: Omit<Booking, "id">
+): Promise<string> => {
+  console.warn(
+    "createBooking is deprecated. Use createEvent with eventType='experience' instead."
+  );
+  return createEvent({
+    eventType: "experience",
+    title: bookingData.eventTitle,
+    description: bookingData.eventDescription,
+    image: bookingData.eventImage,
+    date: bookingData.bookedDate,
+    time: bookingData.bookedTime,
+    location: bookingData.location,
+    price: bookingData.price,
+    currency: bookingData.currency,
+    category: bookingData.category,
+    companyId: bookingData.companyId,
+    companyName: bookingData.companyName,
+    attendees: bookingData.numberOfAttendees,
+    maxAttendees: bookingData.numberOfAttendees,
+    status:
+      bookingData.status === "pending" || bookingData.status === "confirmed"
+        ? "upcoming"
+        : (bookingData.status as "completed" | "cancelled"),
+    tags: [],
+    featured: false,
+  });
+};
+
+export const getBookingById = async (id: string): Promise<Booking | null> => {
+  console.warn("getBookingById is deprecated. Use getExperienceById instead.");
+  const event = await getExperienceById(id);
+  if (!event) return null;
+
+  return {
+    id: event.id,
+    eventId: event.id,
+    eventTitle: event.title || "",
+    eventDescription: event.description || "",
+    eventImage: event.image,
+    companyId: event.companyId,
+    companyName: event.companyName,
+    bookedDate: event.date,
+    bookedTime: event.time,
+    location: event.location,
+    price: event.price,
+    currency: event.currency,
+    category: event.category,
+    bookerUserId: "",
+    bookerName: "",
+    bookerEmail: "",
+    numberOfAttendees: event.attendees,
+    status:
+      event.status === "upcoming"
+        ? "confirmed"
+        : (event.status as "completed" | "cancelled" | "pending"),
+    paymentStatus: "pending",
+    createdAt: "",
+    updatedAt: "",
+  } as Booking;
 };
 
 export const getBookingsByCompany = async (
   companyId: string
 ): Promise<Booking[]> => {
-  try {
-    checkFirebaseConnection();
-    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
-    const q = query(bookingsRef, where("companyId", "==", companyId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        } as Booking)
-    );
-  } catch (error) {
-    console.error("Error fetching bookings by company:", error);
-    throw error;
-  }
+  console.warn(
+    "getBookingsByCompany is deprecated. Use getExperiencesByCompany instead."
+  );
+  const experiences = await getExperiencesByCompany(companyId);
+  return experiences.map(
+    (event) =>
+      ({
+        id: event.id,
+        eventId: event.id,
+        eventTitle: event.title || "",
+        eventDescription: event.description || "",
+        eventImage: event.image,
+        companyId: event.companyId,
+        companyName: event.companyName,
+        bookedDate: event.date,
+        bookedTime: event.time,
+        location: event.location,
+        price: event.price,
+        currency: event.currency,
+        category: event.category,
+        bookerUserId: "",
+        bookerName: "",
+        bookerEmail: "",
+        numberOfAttendees: event.attendees,
+        status:
+          event.status === "upcoming"
+            ? "confirmed"
+            : (event.status as "completed" | "cancelled" | "pending"),
+        paymentStatus: "pending",
+        createdAt: "",
+        updatedAt: "",
+      } as Booking)
+  );
 };
 
 export const getBookingsByUser = async (userId: string): Promise<Booking[]> => {
-  try {
-    checkFirebaseConnection();
-    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
-    const q = query(bookingsRef, where("bookerUserId", "==", userId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        } as Booking)
-    );
-  } catch (error) {
-    console.error("Error fetching bookings by user:", error);
-    throw error;
-  }
+  console.warn(
+    "getBookingsByUser is deprecated. Experiences don't have user-specific booking info."
+  );
+  return [];
 };
 
 export const getBookingsByEvent = async (
   eventId: string
 ): Promise<Booking[]> => {
-  try {
-    checkFirebaseConnection();
-    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
-    const q = query(bookingsRef, where("eventId", "==", eventId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        } as Booking)
-    );
-  } catch (error) {
-    console.error("Error fetching bookings by event:", error);
-    throw error;
-  }
+  const event = await getExperienceById(eventId);
+  if (!event) return [];
+
+  return [
+    {
+      id: event.id,
+      eventId: event.id,
+      eventTitle: event.title || "",
+      eventDescription: event.description || "",
+      eventImage: event.image,
+      companyId: event.companyId,
+      companyName: event.companyName,
+      bookedDate: event.date,
+      bookedTime: event.time,
+      location: event.location,
+      price: event.price,
+      currency: event.currency,
+      category: event.category,
+      bookerUserId: "",
+      bookerName: "",
+      bookerEmail: "",
+      numberOfAttendees: event.maxAttendees,
+      status:
+        event.status === "upcoming"
+          ? "confirmed"
+          : (event.status as "completed" | "cancelled" | "pending"),
+      paymentStatus: "pending",
+      createdAt: "",
+      updatedAt: "",
+    } as Booking,
+  ];
 };
 
 export const getBookingsByDateRange = async (
@@ -418,77 +638,80 @@ export const getBookingsByDateRange = async (
   startDate: string,
   endDate: string
 ): Promise<Booking[]> => {
-  try {
-    checkFirebaseConnection();
-    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
-    const q = query(
-      bookingsRef,
-      where("companyId", "==", companyId),
-      where("bookedDate", ">=", startDate),
-      where("bookedDate", "<=", endDate)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        } as Booking)
-    );
-  } catch (error) {
-    console.error("Error fetching bookings by date range:", error);
-    throw error;
-  }
+  console.warn(
+    "getBookingsByDateRange is deprecated. Use getExperiencesByDateRange instead."
+  );
+  const experiences = await getExperiencesByDateRange(
+    companyId,
+    startDate,
+    endDate
+  );
+  return experiences.map(
+    (event) =>
+      ({
+        id: event.id,
+        eventId: event.id,
+        eventTitle: event.title || "",
+        eventDescription: event.description || "",
+        eventImage: event.image,
+        companyId: event.companyId,
+        companyName: event.companyName,
+        bookedDate: event.date,
+        bookedTime: event.time,
+        location: event.location,
+        price: event.price,
+        currency: event.currency,
+        category: event.category,
+        bookerUserId: "",
+        bookerName: "",
+        bookerEmail: "",
+        numberOfAttendees: event.attendees,
+        status:
+          event.status === "upcoming"
+            ? "confirmed"
+            : (event.status as "completed" | "cancelled" | "pending"),
+        paymentStatus: "pending",
+        createdAt: "",
+        updatedAt: "",
+      } as Booking)
+  );
 };
 
 export const updateBooking = async (
   id: string,
   bookingData: Partial<Booking>
 ): Promise<void> => {
-  try {
-    checkFirebaseConnection();
-    const bookingRef = doc(db, BOOKINGS_COLLECTION, id);
-    await updateDoc(bookingRef, {
-      ...bookingData,
-      updatedAt: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error("Error updating booking:", error);
-    throw error;
-  }
+  console.warn("updateBooking is deprecated. Use updateEvent instead.");
+  await updateEvent(id, {
+    title: bookingData.eventTitle,
+    description: bookingData.eventDescription,
+    image: bookingData.eventImage,
+    date: bookingData.bookedDate,
+    time: bookingData.bookedTime,
+    location: bookingData.location,
+    price: bookingData.price,
+    currency: bookingData.currency,
+    attendees: bookingData.numberOfAttendees,
+    status:
+      bookingData.status === "pending" || bookingData.status === "confirmed"
+        ? "upcoming"
+        : (bookingData.status as "completed" | "cancelled" | undefined),
+  });
 };
 
 export const deleteBooking = async (id: string): Promise<void> => {
-  try {
-    checkFirebaseConnection();
-    const bookingRef = doc(db, BOOKINGS_COLLECTION, id);
-    await deleteDoc(bookingRef);
-  } catch (error) {
-    console.error("Error deleting booking:", error);
-    throw error;
-  }
+  console.warn("deleteBooking is deprecated. Use deleteEvent instead.");
+  await deleteEvent(id);
 };
 
-// Check if a date is already booked for a specific event
 export const isDateBooked = async (
   eventId: string,
   date: string
 ): Promise<boolean> => {
-  try {
-    checkFirebaseConnection();
-    const bookingsRef = collection(db, BOOKINGS_COLLECTION);
-    const q = query(
-      bookingsRef,
-      where("eventId", "==", eventId),
-      where("bookedDate", "==", date),
-      where("status", "in", ["confirmed", "pending"])
-    );
-    const snapshot = await getDocs(q);
-    return !snapshot.empty;
-  } catch (error) {
-    console.error("Error checking if date is booked:", error);
-    throw error;
-  }
+  console.warn(
+    "isDateBooked is deprecated. Check experience availability instead."
+  );
+  return false;
 };
 
 // Message operations

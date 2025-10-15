@@ -6,6 +6,7 @@ import { useCreateEvent } from "@/hooks/useFirestore";
 import { Event, SeatRange, DateConfiguration } from "@/types/event";
 import { Company } from "@/types/company";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import { checkExperienceDateConflicts } from "@/lib/firestore";
 import Button from "../Button";
 import { TypeSelectionStep } from "./TypeSelectionStep";
 import { BasicInfoFields } from "./BasicInfoFields";
@@ -26,7 +27,7 @@ const EventModal: React.FC<EventModalProps> = ({
   company,
 }) => {
   const { create, loading, error } = useCreateEvent();
-  const { uploadImageWithProgress } = useImageUpload();
+  const { uploadImageWithProgress, uploading } = useImageUpload();
 
   // Form state
   const [eventType, setEventType] = useState<"event" | "experience" | null>(
@@ -197,6 +198,43 @@ const EventModal: React.FC<EventModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Helper function to get all dates from configuration
+  const getDatesFromConfiguration = (): string[] => {
+    if (eventType !== "experience") return [];
+
+    if (dateConfigType === "selected") {
+      return selectedDates;
+    } else if (
+      dateConfigType === "range" &&
+      dateRange.startDate &&
+      dateRange.endDate
+    ) {
+      const dates: string[] = [];
+      const start = new Date(dateRange.startDate);
+      const end = new Date(dateRange.endDate);
+      const current = new Date(start);
+
+      while (current <= end) {
+        dates.push(current.toISOString().split("T")[0]);
+        current.setDate(current.getDate() + 1);
+      }
+      return dates;
+    } else if (dateConfigType === "monthly" && monthlyDay) {
+      const dates: string[] = [];
+      const today = new Date();
+      for (let i = 0; i < 12; i++) {
+        const date = new Date(
+          today.getFullYear(),
+          today.getMonth() + i,
+          parseInt(monthlyDay)
+        );
+        dates.push(date.toISOString().split("T")[0]);
+      }
+      return dates;
+    }
+    return [];
+  };
+
   // Submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,9 +244,34 @@ const EventModal: React.FC<EventModalProps> = ({
     }
 
     try {
+      // Check for date conflicts if creating an experience
+      if (eventType === "experience" && company?.id) {
+        const datesToCheck = getDatesFromConfiguration();
+        const conflictCheck = await checkExperienceDateConflicts(
+          company.id,
+          datesToCheck
+        );
+
+        if (conflictCheck.hasConflict) {
+          const conflictMessage = `Date conflict detected! The following dates already have experiences:\n${conflictCheck.conflictingDates
+            .slice(0, 5)
+            .join(", ")}${
+            conflictCheck.conflictingDates.length > 5
+              ? `\n...and ${conflictCheck.conflictingDates.length - 5} more`
+              : ""
+          }`;
+
+          setErrors({
+            dateConfig: conflictMessage,
+          });
+          return;
+        }
+      }
+
       let imageUrl = "";
       if (formData.image) {
         const result = await uploadImageWithProgress(formData.image);
+
         if (result) {
           imageUrl = result.url;
         }
@@ -470,8 +533,8 @@ const EventModal: React.FC<EventModalProps> = ({
                     ? "Create Experience"
                     : "Create Event"
                 }
-                loading={loading}
-                disabled={loading}
+                loading={loading || uploading}
+                disabled={loading || uploading}
                 onClick={handleSubmit}
                 className={`cursor-pointer px-6 py-3 text-white rounded-lg transition-colors ${
                   eventType === "experience"

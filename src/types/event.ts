@@ -37,4 +37,6 @@ export interface Event {
   // Experience-specific fields
   seatRanges?: SeatRange[]; // For experiences with different seat tiers
   dateConfiguration?: DateConfiguration; // For experiences with flexible dates
+
+  experienceBooked?: boolean; // True if this experience has been booked
 }

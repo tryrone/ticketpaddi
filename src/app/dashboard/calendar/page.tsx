@@ -5,15 +5,15 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import BookingCalendar from "@/components/BookingCalendar";
 import BookingDetailsModal from "@/components/BookingDetailsModal";
 import { useCompanies } from "@/hooks/useFirestore";
-import { Booking } from "@/types/booking";
-import { useBookingsByCompany } from "@/hooks/useBookings";
+import { Event } from "@/types/event";
+import { useExperiencesByCompany } from "@/hooks/useBookings";
 import { IconCalendar, IconChevronDown } from "@tabler/icons-react";
 import { Select } from "@mantine/core";
 
 export default function CalendarPage() {
   const { companies, loading: companiesLoading } = useCompanies();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Event | null>(null);
   const [showBookingDetails, setShowBookingDetails] = useState(false);
 
   // Get the first company by default
@@ -24,11 +24,11 @@ export default function CalendarPage() {
     return selectedCompanyId;
   }, [companies, selectedCompanyId]);
 
-  const { bookings, loading: bookingsLoading } = useBookingsByCompany(
+  const { experiences, loading: bookingsLoading } = useExperiencesByCompany(
     defaultCompanyId || selectedCompanyId
   );
 
-  const handleBookingClick = (booking: Booking) => {
+  const handleBookingClick = (booking: Event) => {
     setSelectedBooking(booking);
     setShowBookingDetails(true);
   };
@@ -82,16 +82,16 @@ export default function CalendarPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">
-                      Viewing bookings for
+                      Viewing experiences for
                     </p>
                     <p className="text-lg font-semibold text-gray-900">
                       {selectedCompany.name}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">Total Bookings</p>
+                    <p className="text-sm text-gray-600">Total Experiences</p>
                     <p className="text-2xl font-bold text-blue-600">
-                      {bookings.length}
+                      {experiences.length}
                     </p>
                   </div>
                 </div>
@@ -111,12 +111,12 @@ export default function CalendarPage() {
                 No Companies Found
               </h3>
               <p className="text-gray-600 mb-4">
-                Create a company first to start managing bookings
+                Create a company first to start managing experiences
               </p>
             </div>
           ) : (
             <BookingCalendar
-              bookings={bookings}
+              bookings={experiences}
               onBookingClick={handleBookingClick}
               loading={bookingsLoading}
             />
@@ -131,8 +131,8 @@ export default function CalendarPage() {
               setShowBookingDetails(false);
               setSelectedBooking(null);
             }}
-            eventId={selectedBooking.eventId}
-            eventTitle={selectedBooking.eventTitle}
+            eventId={selectedBooking.id}
+            eventTitle={selectedBooking.title || ""}
           />
         )}
       </div>

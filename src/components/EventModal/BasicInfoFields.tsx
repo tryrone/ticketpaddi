@@ -190,7 +190,7 @@ export const BasicInfoFields: React.FC<BasicInfoFieldsProps> = ({
           <Select
             name="currency"
             value={formData.currency}
-            onChange={(value) => onCurrencyChange(value || "USD")}
+            onChange={(value) => onCurrencyChange(value || "NGN")}
             styles={{
               input: {
                 height: 48,

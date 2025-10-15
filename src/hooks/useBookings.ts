@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
+import { Event } from "@/types/event";
 import { Booking } from "@/types/booking";
 import {
+  getExperiencesByCompany,
+  getExperiencesByDateRange,
+  getExperienceById,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  // Deprecated booking functions for backward compatibility
   getBookingById,
   getBookingsByCompany,
   getBookingsByUser,
@@ -13,6 +21,37 @@ import {
 } from "@/lib/firestore";
 import { useAuth } from "./useAuth";
 
+// New hook using experiences (events with eventType="experience")
+export const useExperiencesByCompany = (companyId: string) => {
+  const [experiences, setExperiences] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchExperiences = useCallback(async () => {
+    if (!companyId) return;
+
+    try {
+      setLoading(true);
+      const data = await getExperiencesByCompany(companyId);
+      setExperiences(data);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch experiences"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    fetchExperiences();
+  }, [fetchExperiences]);
+
+  return { experiences, loading, error, refetch: fetchExperiences };
+};
+
+// Backward compatibility hook - returns Booking[] from experiences
 export const useBookingsByCompany = (companyId: string) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,6 +161,45 @@ export const useBooking = (id: string) => {
   return { booking, loading, error, refetch: fetchBooking };
 };
 
+// New hook for experiences by date range
+export const useExperiencesByDateRange = (
+  companyId: string,
+  startDate: string,
+  endDate: string
+) => {
+  const [experiences, setExperiences] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchExperiences = useCallback(async () => {
+    if (!companyId || !startDate || !endDate) return;
+
+    try {
+      setLoading(true);
+      const data = await getExperiencesByDateRange(
+        companyId,
+        startDate,
+        endDate
+      );
+      setExperiences(data);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch experiences"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId, startDate, endDate]);
+
+  useEffect(() => {
+    fetchExperiences();
+  }, [fetchExperiences]);
+
+  return { experiences, loading, error, refetch: fetchExperiences };
+};
+
+// Backward compatibility hook
 export const useBookingsByDateRange = (
   companyId: string,
   startDate: string,

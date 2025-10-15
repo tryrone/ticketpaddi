@@ -106,6 +106,8 @@ const Button = ({
         fontSize,
         fontWeight,
         width,
+        opacity: disabled || loading ? 0.5 : 1,
+        position: "relative",
         ...(color && { color }),
         ...buttonStyle[type],
         ...sx,
@@ -115,7 +117,13 @@ const Button = ({
       {leftIcon && !loading && (
         <span className="btn-left-icon">{leftIcon}</span>
       )}
-      {loading && <Loader size={loadingSize || "sm"} mr={Spacing.sm} />}
+      {loading && (
+        <Loader
+          size={loadingSize || "sm"}
+          mr={Spacing.sm}
+          style={{ position: "absolute", left: 0 }}
+        />
+      )}
       {text}
       {rightIcon && <span className="btn-right-icon">{rightIcon}</span>}
     </button>
