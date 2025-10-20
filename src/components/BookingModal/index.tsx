@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Modal } from "@mantine/core";
-import { Event } from "@/types/event";
+import { Event } from "@/types/company";
 import { useCreateBooking, useCheckDateBooked } from "@/hooks/useBookings";
 import { useCreateConversation } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";

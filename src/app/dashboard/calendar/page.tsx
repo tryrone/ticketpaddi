@@ -5,7 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import BookingCalendar from "@/components/BookingCalendar";
 import BookingDetailsModal from "@/components/BookingDetailsModal";
 import { useCompanies } from "@/hooks/useFirestore";
-import { Event } from "@/types/event";
+import { Event } from "@/types/company";
 import { useExperiencesByCompany } from "@/hooks/useBookings";
 import { IconCalendar, IconChevronDown } from "@tabler/icons-react";
 import { Select } from "@mantine/core";

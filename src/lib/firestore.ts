@@ -1,9 +1,11 @@
 import {
   collection,
+  collectionGroup,
   doc,
   getDocs,
   getDoc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -15,8 +17,7 @@ import {
   increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { Company } from "@/types/company";
-import { Event } from "@/types/event";
+import { Company, Event } from "@/types/company";
 import { Booking } from "@/types/booking";
 import { Message, Conversation } from "@/types/message";
 import { User as FirebaseUser } from "firebase/auth";
@@ -32,9 +33,10 @@ const checkFirebaseConnection = () => {
 
 // Collection names
 const COMPANIES_COLLECTION = "ticket-companies";
-const EVENTS_COLLECTION = "ticketed-events";
 const MESSAGES_COLLECTION = "messages";
 const CONVERSATIONS_COLLECTION = "conversations";
+const EVENTS_SUBCOLLECTION = "events"; // events are now housed under each company
+const EVENTS_INDEX_COLLECTION = "events-index"; // maps eventId -> companyId
 
 // Company operations
 export const getCompanies = async (
@@ -118,7 +120,8 @@ export const deleteCompany = async (id: string): Promise<void> => {
 // Event operations
 export const getEvents = async (): Promise<Event[]> => {
   try {
-    const eventsRef = collection(db, EVENTS_COLLECTION);
+    checkFirebaseConnection();
+    const eventsRef = collectionGroup(db, EVENTS_SUBCOLLECTION);
     const snapshot = await getDocs(eventsRef);
     return snapshot.docs.map(
       (doc) =>
@@ -135,16 +138,15 @@ export const getEvents = async (): Promise<Event[]> => {
 
 export const getEventById = async (id: string): Promise<Event | null> => {
   try {
-    const eventRef = doc(db, EVENTS_COLLECTION, id);
-    const eventSnap = await getDoc(eventRef);
-
-    if (eventSnap.exists()) {
-      return {
-        id: eventSnap.id,
-        ...eventSnap.data(),
-      } as Event;
-    }
-    return null;
+    checkFirebaseConnection();
+    const idxSnap = await getDoc(doc(db, EVENTS_INDEX_COLLECTION, id));
+    if (!idxSnap.exists()) return null;
+    const { companyId } = idxSnap.data() as { companyId: string };
+    const eventSnap = await getDoc(
+      doc(db, COMPANIES_COLLECTION, companyId, EVENTS_SUBCOLLECTION, id)
+    );
+    if (!eventSnap.exists()) return null;
+    return { id: eventSnap.id, ...eventSnap.data() } as Event;
   } catch (error) {
     console.error("Error fetching event:", error);
     throw error;
@@ -155,8 +157,14 @@ export const getEventsByCompany = async (
   companyId: string
 ): Promise<Event[]> => {
   try {
-    const eventsRef = collection(db, EVENTS_COLLECTION);
-    const q = query(eventsRef, where("companyId", "==", companyId));
+    checkFirebaseConnection();
+    const eventsRef = collection(
+      db,
+      COMPANIES_COLLECTION,
+      companyId,
+      EVENTS_SUBCOLLECTION
+    );
+    const q = query(eventsRef);
     const snapshot = await getDocs(q);
     return snapshot.docs.map(
       (doc) =>
@@ -175,7 +183,8 @@ export const getEventsByCategory = async (
   category: string
 ): Promise<Event[]> => {
   try {
-    const eventsRef = collection(db, EVENTS_COLLECTION);
+    checkFirebaseConnection();
+    const eventsRef = collectionGroup(db, EVENTS_SUBCOLLECTION);
     const q = query(eventsRef, where("category", "==", category));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(
@@ -196,7 +205,8 @@ export const getEventsByPriceRange = async (
   maxPrice: number
 ): Promise<Event[]> => {
   try {
-    const eventsRef = collection(db, EVENTS_COLLECTION);
+    checkFirebaseConnection();
+    const eventsRef = collectionGroup(db, EVENTS_SUBCOLLECTION);
     const q = query(
       eventsRef,
       where("price", ">=", minPrice),
@@ -218,9 +228,11 @@ export const getEventsByPriceRange = async (
 
 export const searchEvents = async (searchTerm: string): Promise<Event[]> => {
   try {
-    const eventsRef = collection(db, EVENTS_COLLECTION);
+    checkFirebaseConnection();
+    const eventsRef = collectionGroup(db, EVENTS_SUBCOLLECTION);
     const q = query(
       eventsRef,
+      orderBy("title"),
       where("title", ">=", searchTerm),
       where("title", "<=", searchTerm + "\uf8ff")
     );
@@ -242,14 +254,31 @@ export const createEvent = async (
   eventData: Omit<Event, "id">
 ): Promise<string> => {
   try {
-    const eventsRef = collection(db, EVENTS_COLLECTION);
-    const companyRef = doc(db, COMPANIES_COLLECTION, eventData.companyId);
+    checkFirebaseConnection();
+    // Store events under the company's events subcollection
+    const companyId = eventData.companyId;
+    const companyRef = doc(db, COMPANIES_COLLECTION, companyId);
+    const eventsRef = collection(
+      db,
+      COMPANIES_COLLECTION,
+      companyId,
+      EVENTS_SUBCOLLECTION
+    );
 
     const docRef = await addDoc(eventsRef, eventData);
 
     await updateDoc(companyRef, {
       numberOfEvents: increment(1),
+      lastEventDate: eventData.date || new Date().toISOString(),
     });
+
+    // Persist the generated id to support lookups and write an index entry
+    await updateDoc(docRef, { id: docRef.id });
+    await setDoc(doc(db, EVENTS_INDEX_COLLECTION, docRef.id), {
+      eventId: docRef.id,
+      companyId,
+    });
+
     return docRef.id;
   } catch (error) {
     console.error("Error creating event:", error);
@@ -262,7 +291,17 @@ export const updateEvent = async (
   eventData: Partial<Event>
 ): Promise<void> => {
   try {
-    const eventRef = doc(db, EVENTS_COLLECTION, id);
+    checkFirebaseConnection();
+    const idxSnap = await getDoc(doc(db, EVENTS_INDEX_COLLECTION, id));
+    if (!idxSnap.exists()) throw new Error("Event index not found");
+    const { companyId } = idxSnap.data() as { companyId: string };
+    const eventRef = doc(
+      db,
+      COMPANIES_COLLECTION,
+      companyId,
+      EVENTS_SUBCOLLECTION,
+      id
+    );
     await updateDoc(eventRef, eventData);
   } catch (error) {
     console.error("Error updating event:", error);
@@ -272,8 +311,20 @@ export const updateEvent = async (
 
 export const deleteEvent = async (id: string): Promise<void> => {
   try {
-    const eventRef = doc(db, EVENTS_COLLECTION, id);
+    checkFirebaseConnection();
+    const idxRef = doc(db, EVENTS_INDEX_COLLECTION, id);
+    const idxSnap = await getDoc(idxRef);
+    if (!idxSnap.exists()) throw new Error("Event index not found");
+    const { companyId } = idxSnap.data() as { companyId: string };
+    const eventRef = doc(
+      db,
+      COMPANIES_COLLECTION,
+      companyId,
+      EVENTS_SUBCOLLECTION,
+      id
+    );
     await deleteDoc(eventRef);
+    await deleteDoc(idxRef);
   } catch (error) {
     console.error("Error deleting event:", error);
     throw error;
@@ -286,7 +337,8 @@ export const getEventsPaginated = async (
   lastDoc?: DocumentSnapshot
 ): Promise<{ events: Event[]; lastDoc: DocumentSnapshot | null }> => {
   try {
-    const eventsRef = collection(db, EVENTS_COLLECTION);
+    checkFirebaseConnection();
+    const eventsRef = collectionGroup(db, EVENTS_SUBCOLLECTION);
     let q = query(eventsRef, orderBy("date", "desc"), limit(pageSize));
 
     if (lastDoc) {
@@ -323,12 +375,13 @@ export const getExperiencesByCompany = async (
 ): Promise<Event[]> => {
   try {
     checkFirebaseConnection();
-    const eventsRef = collection(db, EVENTS_COLLECTION);
-    const q = query(
-      eventsRef,
-      where("companyId", "==", companyId),
-      where("eventType", "==", "experience")
+    const eventsRef = collection(
+      db,
+      COMPANIES_COLLECTION,
+      companyId,
+      EVENTS_SUBCOLLECTION
     );
+    const q = query(eventsRef, where("eventType", "==", "experience"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(
       (doc) =>
@@ -350,10 +403,14 @@ export const getExperiencesByDateRange = async (
 ): Promise<Event[]> => {
   try {
     checkFirebaseConnection();
-    const eventsRef = collection(db, EVENTS_COLLECTION);
+    const eventsRef = collection(
+      db,
+      COMPANIES_COLLECTION,
+      companyId,
+      EVENTS_SUBCOLLECTION
+    );
     const q = query(
       eventsRef,
-      where("companyId", "==", companyId),
       where("eventType", "==", "experience"),
       where("date", ">=", startDate),
       where("date", "<=", endDate)
@@ -375,16 +432,15 @@ export const getExperiencesByDateRange = async (
 export const getExperienceById = async (id: string): Promise<Event | null> => {
   try {
     checkFirebaseConnection();
-    const eventRef = doc(db, EVENTS_COLLECTION, id);
-    const eventSnap = await getDoc(eventRef);
-
-    if (eventSnap.exists() && eventSnap.data().eventType === "experience") {
-      return {
-        id: eventSnap.id,
-        ...eventSnap.data(),
-      } as Event;
-    }
-    return null;
+    const idxSnap = await getDoc(doc(db, EVENTS_INDEX_COLLECTION, id));
+    if (!idxSnap.exists()) return null;
+    const { companyId } = idxSnap.data() as { companyId: string };
+    const eventSnap = await getDoc(
+      doc(db, COMPANIES_COLLECTION, companyId, EVENTS_SUBCOLLECTION, id)
+    );
+    if (!eventSnap.exists()) return null;
+    const data = { id: eventSnap.id, ...eventSnap.data() } as Event;
+    return data.eventType === "experience" ? data : null;
   } catch (error) {
     console.error("Error fetching experience:", error);
     throw error;
@@ -412,12 +468,13 @@ export const checkExperienceDateConflicts = async (
       };
     }
 
-    const eventsRef = collection(db, EVENTS_COLLECTION);
-    const q = query(
-      eventsRef,
-      where("companyId", "==", companyId),
-      where("eventType", "==", "experience")
+    const eventsRef = collection(
+      db,
+      COMPANIES_COLLECTION,
+      companyId,
+      EVENTS_SUBCOLLECTION
     );
+    const q = query(eventsRef, where("eventType", "==", "experience"));
     const snapshot = await getDocs(q);
 
     const experiences = snapshot.docs

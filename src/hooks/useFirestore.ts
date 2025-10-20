@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Company } from "@/types/company";
-import { Event } from "@/types/event";
+import { Event } from "@/types/company";
 import {
   getCompanies,
   getCompanyById,

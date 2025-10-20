@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useEvents } from "@/hooks/useFirestore";
-import { Event } from "@/types/event";
+import { Event } from "@/types/company";
 import BookingModal from "@/components/BookingModal";
 import {
   IconCalendar,

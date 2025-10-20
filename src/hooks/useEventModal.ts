@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Event } from "@/types/event";
+import { Event } from "@/types/company";
 import { Company } from "@/types/company";
 
 export const useEventModal = () => {

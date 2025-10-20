@@ -1,14 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { Event } from "@/types/event";
+import { Event } from "@/types/company";
 import { Booking } from "@/types/booking";
 import {
   getExperiencesByCompany,
   getExperiencesByDateRange,
-  getExperienceById,
-  createEvent,
-  updateEvent,
-  deleteEvent,
-  // Deprecated booking functions for backward compatibility
   getBookingById,
   getBookingsByCompany,
   getBookingsByUser,

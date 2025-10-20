@@ -8,7 +8,7 @@ import {
   IconUsers,
   IconClock,
 } from "@tabler/icons-react";
-import { Event } from "@/types/event";
+import { Event } from "@/types/company";
 import Image from "next/image";
 
 interface EventCardProps {

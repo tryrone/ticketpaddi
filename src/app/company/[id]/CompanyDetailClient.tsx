@@ -14,7 +14,7 @@ import {
 import EventCard from "@/components/EventCard";
 import EventModal from "@/components/EventModal";
 import { useEventModal } from "@/hooks/useEventModal";
-import { Event } from "@/types/event";
+import { Event } from "@/types/company";
 import { useCompany, useEventsByCompany } from "@/hooks/useFirestore";
 import { Select } from "@mantine/core";
 

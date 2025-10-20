@@ -3,8 +3,7 @@
 import React, { useState } from "react";
 import { Modal } from "@mantine/core";
 import { useCreateEvent } from "@/hooks/useFirestore";
-import { Event, SeatRange, DateConfiguration } from "@/types/event";
-import { Company } from "@/types/company";
+import { Event, SeatRange, DateConfiguration, Company } from "@/types/company";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { checkExperienceDateConflicts } from "@/lib/firestore";
 import Button from "../Button";
@@ -41,7 +40,7 @@ const EventModal: React.FC<EventModalProps> = ({
     time: "",
     location: "",
     price: "",
-    currency: "USD",
+    currency: "NGN",
     category: "",
     maxAttendees: "",
     tags: "",

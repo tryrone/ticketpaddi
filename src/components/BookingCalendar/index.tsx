@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Event } from "@/types/event";
+import { Event } from "@/types/company";
 import {
   IconChevronLeft,
   IconChevronRight,
