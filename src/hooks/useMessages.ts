@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Message, Conversation } from "@/types/message";
 import {
   createMessage,
-  getMessagesByBooking,
+  getMessagesByConversationId,
   markMessageAsRead,
   createConversation,
   getConversationsByUser,
@@ -10,17 +10,26 @@ import {
 } from "@/lib/firestore";
 import { useAuth } from "./useAuth";
 
-export const useMessagesByBooking = (bookingId: string) => {
+export const useMessagesByConversation = ({
+  companyId,
+  conversationId,
+}: {
+  companyId: string;
+  conversationId: string;
+}) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchMessages = useCallback(async () => {
-    if (!bookingId) return;
+    if (!companyId || !conversationId) return;
 
     try {
       setLoading(true);
-      const data = await getMessagesByBooking(bookingId);
+      const data = await getMessagesByConversationId({
+        companyId,
+        conversationId,
+      });
       setMessages(data);
       setError(null);
     } catch (err) {
@@ -28,7 +37,7 @@ export const useMessagesByBooking = (bookingId: string) => {
     } finally {
       setLoading(false);
     }
-  }, [bookingId]);
+  }, [companyId, conversationId]);
 
   useEffect(() => {
     fetchMessages();
@@ -37,18 +46,26 @@ export const useMessagesByBooking = (bookingId: string) => {
   return { messages, loading, error, refetch: fetchMessages };
 };
 
-export const useConversationsByUser = (userType: "owner" | "booker") => {
+export const useConversationsByUser = ({
+  companyId,
+}: {
+  companyId: string;
+}) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const { user } = useAuth();
 
+  const userId = user?.uid;
+
   const fetchConversations = useCallback(async () => {
-    if (!user?.uid) return;
+    if (!userId || !companyId) return;
 
     try {
       setLoading(true);
-      const data = await getConversationsByUser(user.uid, userType);
+      const data = await getConversationsByUser({ userId, companyId });
+
       setConversations(data);
       setError(null);
     } catch (err) {
@@ -58,11 +75,11 @@ export const useConversationsByUser = (userType: "owner" | "booker") => {
     } finally {
       setLoading(false);
     }
-  }, [user?.uid, userType]);
+  }, [userId, companyId]);
 
   useEffect(() => {
     fetchConversations();
-  }, [fetchConversations]);
+  }, [fetchConversations, userId, companyId]);
 
   return { conversations, loading, error, refetch: fetchConversations };
 };
@@ -100,11 +117,23 @@ export const useSendMessage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const send = async (messageData: Omit<Message, "id">) => {
+  const send = async ({
+    messageData,
+    companyId,
+    conversationId,
+  }: {
+    messageData: Omit<Message, "id">;
+    companyId: string;
+    conversationId: string;
+  }) => {
     try {
       setLoading(true);
       setError(null);
-      const id = await createMessage(messageData);
+      const id = await createMessage({
+        messageData,
+        companyId,
+        conversationId,
+      });
       return id;
     } catch (err) {
       const errorMessage =

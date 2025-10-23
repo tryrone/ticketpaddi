@@ -1,34 +1,36 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Conversation } from "@/types/message";
-import { useMessagesByBooking, useSendMessage } from "@/hooks/useMessages";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useMessagesByConversation, useSendMessage } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  IconSend,
-  IconMessage,
-  IconClock,
-  IconCheck,
-  IconX,
-} from "@tabler/icons-react";
+import { IconSend, IconMessage, IconCheck, IconX } from "@tabler/icons-react";
 
 interface MessagingPanelProps {
-  conversation: Conversation;
-  userType: "owner" | "booker";
+  userType: "bot" | "user" | "admin";
   onClose?: () => void;
+  companyId: string;
+  conversationId: string;
 }
 
 const MessagingPanel: React.FC<MessagingPanelProps> = ({
-  conversation,
   userType,
   onClose,
+  companyId,
+  conversationId,
 }) => {
   const [messageText, setMessageText] = useState("");
-  const { messages, loading, refetch } = useMessagesByBooking(
-    conversation.bookingId
-  );
-  const { send, loading: sending } = useSendMessage();
-  const { user } = useAuth();
+  const { messages, loading } = useMessagesByConversation({
+    companyId,
+    conversationId,
+  });
+
+  const otherParticipant = useMemo(() => {
+    return (
+      messages.find((message) => message.sender !== conversationId) || null
+    );
+  }, [messages, conversationId]);
+
+  const { loading: sending } = useSendMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -39,33 +41,33 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // const handleSendMessage = async (e: React.FormEvent) => {
+  //   e.preventDefault();
 
-    if (!messageText.trim() || !user) return;
+  //   if (!messageText.trim() || !user) return;
 
-    const senderName =
-      userType === "owner"
-        ? conversation.participants.ownerName
-        : conversation.participants.bookerName;
+  //   const senderName =
+  //     userType === "user"
+  //       ? user.displayName
+  //       : user.displayName;
 
-    try {
-      await send({
-        bookingId: conversation.bookingId,
-        senderId: user.uid,
-        senderName,
-        senderType: userType,
-        message: messageText,
-        timestamp: new Date().toISOString(),
-        read: false,
-      });
+  //   try {
+  //     await send({
+  //       bookingId: conversation.bookingId,
+  //       senderId: user.uid,
+  //       senderName,
+  //       senderType: userType,
+  //       message: messageText,
+  //       timestamp: new Date().toISOString(),
+  //       read: false,
+  //     });
 
-      setMessageText("");
-      refetch();
-    } catch (error) {
-      console.error("Failed to send message:", error);
-    }
-  };
+  //     setMessageText("");
+  //     refetch();
+  //   } catch (error) {
+  //     console.error("Failed to send message:", error);
+  //   }
+  // };
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -97,14 +99,17 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {conversation.eventTitle}
-            </h3>
+            {/* <h3 className="text-lg font-semibold text-gray-900">
+              {companyName} &rarr;{" "}
+              {userType === "user"
+                ? "You"
+                : otherParticipant?.sender || "Unknown"}
+            </h3> */}
             <p className="text-sm text-gray-600">
               Chat with{" "}
-              {userType === "owner"
-                ? conversation.participants.bookerName
-                : conversation.participants.ownerName}
+              {userType === "user"
+                ? otherParticipant?.sender || "Unknown"
+                : "The agent"}
             </p>
           </div>
           {onClose && (
@@ -132,12 +137,12 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
           </div>
         ) : (
           <>
-            {messages.map((message) => {
-              const isOwnMessage = message.senderId === user?.uid;
+            {messages.map((message, index) => {
+              const isOwnMessage = message.sender !== conversationId;
 
               return (
                 <div
-                  key={message.id}
+                  key={message.id || message.message_id || `message-${index}`}
                   className={`flex ${
                     isOwnMessage ? "justify-end" : "justify-start"
                   }`}
@@ -156,21 +161,20 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
                     >
                       {!isOwnMessage && (
                         <p className="text-xs font-semibold mb-1 opacity-75">
-                          {message.senderName}
+                          {message.sender}
                         </p>
                       )}
-                      <p className="text-sm break-words">{message.message}</p>
+                      <p className="text-sm break-words">{message.content}</p>
                     </div>
                     <div
                       className={`flex items-center mt-1 space-x-1 ${
                         isOwnMessage ? "justify-end" : "justify-start"
                       }`}
                     >
-                      <IconClock size={12} className="text-gray-400" />
                       <span className="text-xs text-gray-500">
-                        {formatTime(message.timestamp)}
+                        {formatTime(message.time_created)}
                       </span>
-                      {isOwnMessage && message.read && (
+                      {isOwnMessage && (
                         <IconCheck size={12} className="text-blue-600" />
                       )}
                     </div>
@@ -185,7 +189,8 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
 
       {/* Input */}
       <form
-        onSubmit={handleSendMessage}
+        // onSubmit={handleSendMessage}
+        onSubmit={() => {}}
         className="p-4 border-t border-gray-200"
       >
         <div className="flex items-center space-x-2">

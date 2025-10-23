@@ -1,4 +1,4 @@
-import { createCompany, createEvent } from "@/lib/firestore";
+import { createCompany } from "@/lib/firestore";
 import { mockCompanies } from "@/data/companies";
 
 /**

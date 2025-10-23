@@ -31,9 +31,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
   event,
   onSuccess,
 }) => {
-  const { create, loading, error } = useCreateBooking();
+  const { loading, error } = useCreateBooking();
   const { checkDate } = useCheckDateBooked();
-  const { create: createConversation } = useCreateConversation();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -134,47 +133,47 @@ const BookingModal: React.FC<BookingModalProps> = ({
     }
 
     try {
-      const bookingData = {
-        eventId: event.id,
-        eventTitle: event.title || "",
-        eventDescription: event.description || "",
-        eventImage: event.image,
-        companyId: event.companyId,
-        companyName: event.companyName,
-        bookedDate: formData.bookedDate,
-        bookedTime: formData.bookedTime,
-        location: event.location,
-        price: event.price,
-        currency: event.currency,
-        category: event.category,
-        bookerUserId: user.uid,
-        bookerName: formData.bookerName,
-        bookerEmail: formData.bookerEmail,
-        bookerPhone: formData.bookerPhone,
-        numberOfAttendees: parseInt(formData.numberOfAttendees),
-        status: "pending" as const,
-        paymentStatus: "pending" as const,
-        notes: formData.notes,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      // const bookingData = {
+      //   eventId: event.id,
+      //   eventTitle: event.title || "",
+      //   eventDescription: event.description || "",
+      //   eventImage: event.image,
+      //   companyId: event.companyId,
+      //   companyName: event.companyName,
+      //   bookedDate: formData.bookedDate,
+      //   bookedTime: formData.bookedTime,
+      //   location: event.location,
+      //   price: event.price,
+      //   currency: event.currency,
+      //   category: event.category,
+      //   bookerUserId: user.uid,
+      //   bookerName: formData.bookerName,
+      //   bookerEmail: formData.bookerEmail,
+      //   bookerPhone: formData.bookerPhone,
+      //   numberOfAttendees: parseInt(formData.numberOfAttendees),
+      //   status: "pending" as const,
+      //   paymentStatus: "pending" as const,
+      //   notes: formData.notes,
+      //   createdAt: new Date().toISOString(),
+      //   updatedAt: new Date().toISOString(),
+      // };
 
-      const bookingId = await create(bookingData);
+      // const bookingId = await create(bookingData);
 
       // Create conversation for this booking
-      await createConversation({
-        bookingId,
-        eventTitle: event.title || "",
-        participants: {
-          ownerId: event.companyId, // Using companyId as owner for now
-          ownerName: event.companyName,
-          bookerId: user.uid,
-          bookerName: formData.bookerName,
-        },
-        unreadCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      // await createConversation({
+      //   bookingId,
+      //   eventTitle: event.title || "",
+      //   participants: {
+      //     ownerId: event.companyId, // Using companyId as owner for now
+      //     ownerName: event.companyName,
+      //     bookerId: user.uid,
+      //     bookerName: formData.bookerName,
+      //   },
+      //   unreadCount: 0,
+      //   createdAt: new Date().toISOString(),
+      //   updatedAt: new Date().toISOString(),
+      // });
 
       onSuccess?.();
       onClose();

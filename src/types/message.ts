@@ -1,27 +1,22 @@
 export interface Message {
   id: string;
-  bookingId: string;
-  senderId: string;
-  senderName: string;
-  senderType: "owner" | "booker"; // Event owner or person who booked
-  message: string;
-  timestamp: string;
-  read: boolean;
+  company_id: string;
+  company_name: string;
+  content: string;
+  cost: number | null;
+  input_tokens: number | null;
+  message_id: string;
+  message_name: string;
+  message_type: "message" | "response" | "notification";
+  output_tokens: number | null;
+  receiver: string;
+  sender: string;
+  sender_type: "bot" | "user" | "admin";
+  time_created: string;
 }
 
 export interface Conversation {
   id: string;
-  bookingId: string;
-  eventTitle: string;
-  participants: {
-    ownerId: string;
-    ownerName: string;
-    bookerId: string;
-    bookerName: string;
-  };
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount: number;
-  createdAt: string;
-  updatedAt: string;
+  last_updated_at?: string;
+  unseen_messages?: number;
 }

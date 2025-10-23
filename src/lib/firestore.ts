@@ -647,7 +647,9 @@ export const getBookingsByCompany = async (
   );
 };
 
-export const getBookingsByUser = async (userId: string): Promise<Booking[]> => {
+export const getBookingsByUser = async (
+  _userId: string
+): Promise<Booking[]> => {
   console.warn(
     "getBookingsByUser is deprecated. Experiences don't have user-specific booking info."
   );
@@ -762,8 +764,8 @@ export const deleteBooking = async (id: string): Promise<void> => {
 };
 
 export const isDateBooked = async (
-  eventId: string,
-  date: string
+  _eventId: string,
+  _date: string
 ): Promise<boolean> => {
   console.warn(
     "isDateBooked is deprecated. Check experience availability instead."
@@ -772,30 +774,39 @@ export const isDateBooked = async (
 };
 
 // Message operations
-export const createMessage = async (
-  messageData: Omit<Message, "id">
-): Promise<string> => {
+export const createMessage = async ({
+  messageData,
+  companyId,
+  conversationId,
+}: {
+  messageData: Omit<Message, "id">;
+  companyId: string;
+  conversationId: string;
+}): Promise<string> => {
   try {
     checkFirebaseConnection();
-    const messagesRef = collection(db, MESSAGES_COLLECTION);
+    // Access the nested messages collection under the specific conversation
+    const messagesRef = collection(
+      db,
+      "ticket-companies",
+      companyId,
+      "conversations",
+      conversationId,
+      "messages"
+    );
     const docRef = await addDoc(messagesRef, messageData);
 
     // Update conversation with last message
-    const conversationRef = collection(db, CONVERSATIONS_COLLECTION);
-    const q = query(
-      conversationRef,
-      where("bookingId", "==", messageData.bookingId)
+    const conversationRef = doc(
+      db,
+      "ticket-companies",
+      companyId,
+      "conversations",
+      conversationId
     );
-    const snapshot = await getDocs(q);
-
-    if (!snapshot.empty) {
-      const conversationDoc = snapshot.docs[0];
-      await updateDoc(doc(db, CONVERSATIONS_COLLECTION, conversationDoc.id), {
-        lastMessage: messageData.message,
-        lastMessageTime: messageData.timestamp,
-        updatedAt: new Date().toISOString(),
-      });
-    }
+    await updateDoc(conversationRef, {
+      last_updated_at: new Date().toISOString(),
+    });
 
     return docRef.id;
   } catch (error) {
@@ -804,25 +815,27 @@ export const createMessage = async (
   }
 };
 
-export const getMessagesByBooking = async (
-  bookingId: string
-): Promise<Message[]> => {
+export const getMessagesByConversationId = async ({
+  companyId,
+  conversationId,
+}: {
+  companyId: string;
+  conversationId: string;
+}): Promise<Message[]> => {
   try {
     checkFirebaseConnection();
-    const messagesRef = collection(db, MESSAGES_COLLECTION);
-    const q = query(
-      messagesRef,
-      where("bookingId", "==", bookingId),
-      orderBy("timestamp", "asc")
+    const messagesRef = collection(
+      db,
+      "ticket-companies",
+      companyId,
+      "conversations",
+      conversationId,
+      "messages"
     );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        } as Message)
-    );
+    const snapshot = await getDocs(messagesRef);
+    return snapshot.docs.map((doc) => ({
+      ...(doc.data() as Message),
+    }));
   } catch (error) {
     console.error("Error fetching messages:", error);
     throw error;
@@ -855,21 +868,25 @@ export const createConversation = async (
   }
 };
 
-export const getConversationsByUser = async (
-  userId: string,
-  userType: "owner" | "booker"
-): Promise<Conversation[]> => {
+export const getConversationsByUser = async ({
+  companyId,
+}: {
+  companyId: string;
+  userId: string;
+}): Promise<Conversation[]> => {
   try {
     checkFirebaseConnection();
-    const conversationsRef = collection(db, CONVERSATIONS_COLLECTION);
-    const field =
-      userType === "owner" ? "participants.ownerId" : "participants.bookerId";
-    const q = query(
-      conversationsRef,
-      where(field, "==", userId),
-      orderBy("updatedAt", "desc")
+
+    // Use collection to query conversations for a specific company
+    const conversationsRef = collection(
+      db,
+      "ticket-companies",
+      companyId,
+      "conversations"
     );
+    const q = query(conversationsRef);
     const snapshot = await getDocs(q);
+
     return snapshot.docs.map(
       (doc) =>
         ({
@@ -879,6 +896,29 @@ export const getConversationsByUser = async (
     );
   } catch (error) {
     console.error("Error fetching conversations:", error);
+    throw error;
+  }
+};
+
+export const markConversationAsRead = async ({
+  companyId,
+  conversationId,
+}: {
+  companyId: string;
+  conversationId: string;
+}): Promise<void> => {
+  try {
+    checkFirebaseConnection();
+    const conversationRef = doc(
+      db,
+      "ticket-companies",
+      companyId,
+      "conversations",
+      conversationId
+    );
+    await updateDoc(conversationRef, { unseen_messages: 0 });
+  } catch (error) {
+    console.error("Error marking conversation as read:", error);
     throw error;
   }
 };

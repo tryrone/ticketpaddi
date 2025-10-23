@@ -72,7 +72,7 @@ export const useCompany = (id: string) => {
     if (!id) return;
 
     fetchCompany();
-  }, [id]);
+  }, [id, fetchCompany]);
 
   return { company, loading, error, fetchCompany };
 };
