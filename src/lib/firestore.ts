@@ -545,6 +545,12 @@ export const checkExperienceDateConflicts = async (
   }
 };
 
+/**
+ * Fetches a booked event by company and event ID from the nested collection structure
+ * @param companyId - The company ID
+ * @param eventId - The event ID
+ * @returns Promise<BookedEvent | null> - The booked event or null if not found
+ */
 export const getBookingById = async ({
   companyId,
   eventId,
@@ -576,20 +582,39 @@ export const getBookingById = async ({
   }
 };
 
-export const getBookingsByCompany = async (
-  companyId: string
-): Promise<BookedEvent[]> => {
-  checkFirebaseConnection();
-  const bookingsRef = collection(db, "ticket-companies", companyId, "events");
-  const snapshot = await getDocs(bookingsRef);
-  return snapshot.docs.map(
-    (doc) =>
-      ({
-        ...doc.data(),
-      } as BookedEvent)
-  );
+/**
+ * Fetches all booked events for a specific company
+ * @param companyId - The company ID
+ * @returns Promise<BookedEvent[]> - Array of booked events
+ */
+export const getBookingsByCompany = async ({
+  companyId,
+}: {
+  companyId: string;
+}): Promise<BookedEvent[]> => {
+  try {
+    checkFirebaseConnection();
+    const bookingsRef = collection(db, "ticket-companies", companyId, "events");
+    const snapshot = await getDocs(bookingsRef);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as BookedEvent)
+    );
+  } catch (error) {
+    console.error("Error fetching bookings by company:", error);
+    throw error;
+  }
 };
 
+/**
+ * Fetches confirmed bookings (tickets) for a specific event
+ * @param companyId - The company ID
+ * @param eventId - The event ID
+ * @returns Promise<Booking[]> - Array of confirmed bookings
+ */
 export const getConfirmedBookingsByEvent = async ({
   companyId,
   eventId,
@@ -597,25 +622,37 @@ export const getConfirmedBookingsByEvent = async ({
   companyId: string;
   eventId: string;
 }): Promise<Booking[]> => {
-  checkFirebaseConnection();
-  const confirmedTicketsRef = collection(
-    db,
-    "ticket-companies",
-    companyId,
-    "events",
-    eventId,
-    "confirmed-tickets"
-  );
-  const snapshot = await getDocs(confirmedTicketsRef);
-  return snapshot.docs.map(
-    (doc) =>
-      ({
-        id: doc.id,
-        ...doc.data(),
-      } as Booking)
-  );
+  try {
+    checkFirebaseConnection();
+    const confirmedTicketsRef = collection(
+      db,
+      "ticket-companies",
+      companyId,
+      "events",
+      eventId,
+      "confirmed-tickets"
+    );
+    const snapshot = await getDocs(confirmedTicketsRef);
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as Booking)
+    );
+  } catch (error) {
+    console.error("Error fetching confirmed bookings by event:", error);
+    throw error;
+  }
 };
 
+/**
+ * Checks if a specific date is booked for an event
+ * @param companyId - The company ID
+ * @param eventId - The event ID
+ * @param date - The date to check (ISO string format)
+ * @returns Promise<boolean> - True if the date is booked, false otherwise
+ */
 export const isDateBooked = async ({
   companyId,
   eventId,
@@ -625,21 +662,35 @@ export const isDateBooked = async ({
   eventId: string;
   date: string;
 }): Promise<boolean> => {
-  checkFirebaseConnection();
-  const confirmedTicketsRef = collection(
-    db,
-    "ticket-companies",
-    companyId,
-    "events",
-    eventId,
-    "confirmed-tickets"
-  );
-  const q = query(confirmedTicketsRef, where("date", "==", date));
-  const snapshot = await getDocs(q);
-  return snapshot.size > 0;
+  try {
+    checkFirebaseConnection();
+    const bookingsRef = collection(
+      db,
+      "ticket-companies",
+      companyId,
+      "events",
+      eventId
+    );
+    const q = query(
+      bookingsRef,
+      where("dateAvailability", "array-contains", date)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.size > 0;
+  } catch (error) {
+    console.error("Error checking if date is booked:", error);
+    throw error;
+  }
 };
 
 // Message operations
+/**
+ * Creates a new message in a conversation
+ * @param messageData - The message data (without id)
+ * @param companyId - The company ID
+ * @param conversationId - The conversation ID
+ * @returns Promise<string> - The ID of the created message
+ */
 export const createMessage = async ({
   messageData,
   companyId,
@@ -681,6 +732,12 @@ export const createMessage = async ({
   }
 };
 
+/**
+ * Fetches all messages for a specific conversation
+ * @param companyId - The company ID
+ * @param conversationId - The conversation ID
+ * @returns Promise<Message[]> - Array of messages
+ */
 export const getMessagesByConversationId = async ({
   companyId,
   conversationId,
@@ -734,11 +791,15 @@ export const createConversation = async (
   }
 };
 
+/**
+ * Fetches all conversations for a specific company
+ * @param companyId - The company ID
+ * @returns Promise<Conversation[]> - Array of conversations
+ */
 export const getConversationsByUser = async ({
   companyId,
 }: {
   companyId: string;
-  userId: string;
 }): Promise<Conversation[]> => {
   try {
     checkFirebaseConnection();
@@ -766,6 +827,12 @@ export const getConversationsByUser = async ({
   }
 };
 
+/**
+ * Marks a conversation as read by setting unseen_messages to 0
+ * @param companyId - The company ID
+ * @param conversationId - The conversation ID
+ * @returns Promise<void>
+ */
 export const markConversationAsRead = async ({
   companyId,
   conversationId,

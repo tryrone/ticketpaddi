@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { Modal } from "@mantine/core";
 import { Event } from "@/types/company";
 import { useCreateBooking, useCheckDateBooked } from "@/hooks/useBookings";
-import { useCreateConversation } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import {
   IconCalendar,
@@ -77,7 +76,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
     if (date && event.isTemplate) {
       setCheckingDate(true);
       try {
-        const isBooked = await checkDate(event.id, date);
+        const isBooked = await checkDate({
+          companyId: event.companyId,
+          eventId: event.id,
+          date,
+        });
         if (isBooked) {
           setErrors((prev) => ({
             ...prev,

@@ -60,11 +60,11 @@ export const useConversationsByUser = ({
   const userId = user?.uid;
 
   const fetchConversations = useCallback(async () => {
-    if (!userId || !companyId) return;
+    if (!companyId) return;
 
     try {
       setLoading(true);
-      const data = await getConversationsByUser({ userId, companyId });
+      const data = await getConversationsByUser({ companyId });
 
       setConversations(data);
       setError(null);
