@@ -1,37 +1,53 @@
+import { DateConfiguration, SeatRange } from "./company";
+
 export interface Booking {
   id: string;
-  eventId: string; // Reference to the event template
-  eventTitle: string;
-  eventDescription: string;
-  eventImage: string;
-  companyId: string;
-  companyName: string;
-  bookedDate: string; // The specific date this booking is for
-  bookedTime: string;
-  location: string;
-  price: number;
-  currency: string;
-  category: string;
-  bookerUserId: string; // User who booked the event
-  bookerName: string;
-  bookerEmail: string;
-  bookerPhone?: string;
-  numberOfAttendees: number;
+  bot_number: string;
+  confirmedAt: string; // timestamp
+  customer_email: string;
+  customer_name: string;
+  customer_phone: string;
+  event_id: string;
+  expiration_time: string;
+  grand_total: number;
+  merchant_payment_reference: string;
+  payment_amount_minor: number;
+  payment_link: string;
+  payment_reference: string;
+  payment_status: "pending" | "paid" | "refunded" | "failed";
+  quantity: number;
   status: "pending" | "confirmed" | "completed" | "cancelled";
-  paymentStatus: "pending" | "paid" | "refunded";
-  paymentId?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
+  status_time: Date;
+  ticket_price_minor: number;
+  time_created: string;
+  updated_at: Date;
+  paid_ticket_ids: { id: string; status: string }[];
+  paid_ticket_links: string[];
+  notes: string;
 }
 
-export interface BookingFormData {
-  eventId: string;
-  bookedDate: string;
-  bookedTime: string;
-  numberOfAttendees: number;
-  bookerName: string;
-  bookerEmail: string;
-  bookerPhone?: string;
-  notes?: string;
+export interface BookedEvent {
+  id: string;
+  attendees: number;
+  category: string;
+  companyId: string;
+  companyName: string;
+  createdAt: Date;
+  currency: string;
+  date: string;
+  dateConfiguration: DateConfiguration;
+  datesAvailability: { [key: string]: boolean }[];
+  description: string;
+  eventType: string;
+  featured: boolean;
+  image?: string;
+  isTemplate?: boolean;
+  location: string;
+  maxAttendees: number;
+  price: number;
+  seatRanges: SeatRange[];
+  status: "upcoming" | "ongoing" | "completed" | "cancelled";
+  tags: string[];
+  title: string;
+  updatedAt: string;
 }

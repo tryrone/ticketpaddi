@@ -133,6 +133,8 @@ export default function CalendarPage() {
             }}
             eventId={selectedBooking.id}
             eventTitle={selectedBooking.title || ""}
+            companyId={selectedCompany?.id || ""}
+            selectedBookingDate={selectedBooking.date}
           />
         )}
       </div>

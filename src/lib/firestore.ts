@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Company, Event } from "@/types/company";
-import { Booking } from "@/types/booking";
+import { BookedEvent, Booking } from "@/types/booking";
 import { Message, Conversation } from "@/types/message";
 import { User as FirebaseUser } from "firebase/auth";
 
@@ -545,232 +545,98 @@ export const checkExperienceDateConflicts = async (
   }
 };
 
-// Deprecated: Kept for backward compatibility - use Event operations instead
-export const createBooking = async (
-  bookingData: Omit<Booking, "id">
-): Promise<string> => {
-  console.warn(
-    "createBooking is deprecated. Use createEvent with eventType='experience' instead."
-  );
-  return createEvent({
-    eventType: "experience",
-    title: bookingData.eventTitle,
-    description: bookingData.eventDescription,
-    image: bookingData.eventImage,
-    date: bookingData.bookedDate,
-    time: bookingData.bookedTime,
-    location: bookingData.location,
-    price: bookingData.price,
-    currency: bookingData.currency,
-    category: bookingData.category,
-    companyId: bookingData.companyId,
-    companyName: bookingData.companyName,
-    attendees: bookingData.numberOfAttendees,
-    maxAttendees: bookingData.numberOfAttendees,
-    status:
-      bookingData.status === "pending" || bookingData.status === "confirmed"
-        ? "upcoming"
-        : (bookingData.status as "completed" | "cancelled"),
-    tags: [],
-    featured: false,
-  });
-};
+export const getBookingById = async ({
+  companyId,
+  eventId,
+}: {
+  companyId: string;
+  eventId: string;
+}): Promise<BookedEvent | null> => {
+  try {
+    checkFirebaseConnection();
+    const bookingRef = doc(
+      db,
+      "ticket-companies",
+      companyId,
+      "events",
+      eventId
+    );
+    const bookingSnap = await getDoc(bookingRef);
 
-export const getBookingById = async (id: string): Promise<Booking | null> => {
-  console.warn("getBookingById is deprecated. Use getExperienceById instead.");
-  const event = await getExperienceById(id);
-  if (!event) return null;
-
-  return {
-    id: event.id,
-    eventId: event.id,
-    eventTitle: event.title || "",
-    eventDescription: event.description || "",
-    eventImage: event.image,
-    companyId: event.companyId,
-    companyName: event.companyName,
-    bookedDate: event.date,
-    bookedTime: event.time,
-    location: event.location,
-    price: event.price,
-    currency: event.currency,
-    category: event.category,
-    bookerUserId: "",
-    bookerName: "",
-    bookerEmail: "",
-    numberOfAttendees: event.attendees,
-    status:
-      event.status === "upcoming"
-        ? "confirmed"
-        : (event.status as "completed" | "cancelled" | "pending"),
-    paymentStatus: "pending",
-    createdAt: "",
-    updatedAt: "",
-  } as Booking;
+    if (bookingSnap.exists()) {
+      return {
+        id: bookingSnap.id,
+        ...bookingSnap.data(),
+      } as BookedEvent;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching booking:", error);
+    throw error;
+  }
 };
 
 export const getBookingsByCompany = async (
   companyId: string
-): Promise<Booking[]> => {
-  console.warn(
-    "getBookingsByCompany is deprecated. Use getExperiencesByCompany instead."
-  );
-  const experiences = await getExperiencesByCompany(companyId);
-  return experiences.map(
-    (event) =>
+): Promise<BookedEvent[]> => {
+  checkFirebaseConnection();
+  const bookingsRef = collection(db, "ticket-companies", companyId, "events");
+  const snapshot = await getDocs(bookingsRef);
+  return snapshot.docs.map(
+    (doc) =>
       ({
-        id: event.id,
-        eventId: event.id,
-        eventTitle: event.title || "",
-        eventDescription: event.description || "",
-        eventImage: event.image,
-        companyId: event.companyId,
-        companyName: event.companyName,
-        bookedDate: event.date,
-        bookedTime: event.time,
-        location: event.location,
-        price: event.price,
-        currency: event.currency,
-        category: event.category,
-        bookerUserId: "",
-        bookerName: "",
-        bookerEmail: "",
-        numberOfAttendees: event.attendees,
-        status:
-          event.status === "upcoming"
-            ? "confirmed"
-            : (event.status as "completed" | "cancelled" | "pending"),
-        paymentStatus: "pending",
-        createdAt: "",
-        updatedAt: "",
-      } as Booking)
+        ...doc.data(),
+      } as BookedEvent)
   );
 };
 
-export const getBookingsByUser = async (
-  _userId: string
-): Promise<Booking[]> => {
-  console.warn(
-    "getBookingsByUser is deprecated. Experiences don't have user-specific booking info."
-  );
-  return [];
-};
-
-export const getBookingsByEvent = async (
-  eventId: string
-): Promise<Booking[]> => {
-  const event = await getExperienceById(eventId);
-  if (!event) return [];
-
-  return [
-    {
-      id: event.id,
-      eventId: event.id,
-      eventTitle: event.title || "",
-      eventDescription: event.description || "",
-      eventImage: event.image,
-      companyId: event.companyId,
-      companyName: event.companyName,
-      bookedDate: event.date,
-      bookedTime: event.time,
-      location: event.location,
-      price: event.price,
-      currency: event.currency,
-      category: event.category,
-      bookerUserId: "",
-      bookerName: "",
-      bookerEmail: "",
-      numberOfAttendees: event.maxAttendees,
-      status:
-        event.status === "upcoming"
-          ? "confirmed"
-          : (event.status as "completed" | "cancelled" | "pending"),
-      paymentStatus: "pending",
-      createdAt: "",
-      updatedAt: "",
-    } as Booking,
-  ];
-};
-
-export const getBookingsByDateRange = async (
-  companyId: string,
-  startDate: string,
-  endDate: string
-): Promise<Booking[]> => {
-  console.warn(
-    "getBookingsByDateRange is deprecated. Use getExperiencesByDateRange instead."
-  );
-  const experiences = await getExperiencesByDateRange(
+export const getConfirmedBookingsByEvent = async ({
+  companyId,
+  eventId,
+}: {
+  companyId: string;
+  eventId: string;
+}): Promise<Booking[]> => {
+  checkFirebaseConnection();
+  const confirmedTicketsRef = collection(
+    db,
+    "ticket-companies",
     companyId,
-    startDate,
-    endDate
+    "events",
+    eventId,
+    "confirmed-tickets"
   );
-  return experiences.map(
-    (event) =>
+  const snapshot = await getDocs(confirmedTicketsRef);
+  return snapshot.docs.map(
+    (doc) =>
       ({
-        id: event.id,
-        eventId: event.id,
-        eventTitle: event.title || "",
-        eventDescription: event.description || "",
-        eventImage: event.image,
-        companyId: event.companyId,
-        companyName: event.companyName,
-        bookedDate: event.date,
-        bookedTime: event.time,
-        location: event.location,
-        price: event.price,
-        currency: event.currency,
-        category: event.category,
-        bookerUserId: "",
-        bookerName: "",
-        bookerEmail: "",
-        numberOfAttendees: event.attendees,
-        status:
-          event.status === "upcoming"
-            ? "confirmed"
-            : (event.status as "completed" | "cancelled" | "pending"),
-        paymentStatus: "pending",
-        createdAt: "",
-        updatedAt: "",
+        id: doc.id,
+        ...doc.data(),
       } as Booking)
   );
 };
 
-export const updateBooking = async (
-  id: string,
-  bookingData: Partial<Booking>
-): Promise<void> => {
-  console.warn("updateBooking is deprecated. Use updateEvent instead.");
-  await updateEvent(id, {
-    title: bookingData.eventTitle,
-    description: bookingData.eventDescription,
-    image: bookingData.eventImage,
-    date: bookingData.bookedDate,
-    time: bookingData.bookedTime,
-    location: bookingData.location,
-    price: bookingData.price,
-    currency: bookingData.currency,
-    attendees: bookingData.numberOfAttendees,
-    status:
-      bookingData.status === "pending" || bookingData.status === "confirmed"
-        ? "upcoming"
-        : (bookingData.status as "completed" | "cancelled" | undefined),
-  });
-};
-
-export const deleteBooking = async (id: string): Promise<void> => {
-  console.warn("deleteBooking is deprecated. Use deleteEvent instead.");
-  await deleteEvent(id);
-};
-
-export const isDateBooked = async (
-  _eventId: string,
-  _date: string
-): Promise<boolean> => {
-  console.warn(
-    "isDateBooked is deprecated. Check experience availability instead."
+export const isDateBooked = async ({
+  companyId,
+  eventId,
+  date,
+}: {
+  companyId: string;
+  eventId: string;
+  date: string;
+}): Promise<boolean> => {
+  checkFirebaseConnection();
+  const confirmedTicketsRef = collection(
+    db,
+    "ticket-companies",
+    companyId,
+    "events",
+    eventId,
+    "confirmed-tickets"
   );
-  return false;
+  const q = query(confirmedTicketsRef, where("date", "==", date));
+  const snapshot = await getDocs(q);
+  return snapshot.size > 0;
 };
 
 // Message operations

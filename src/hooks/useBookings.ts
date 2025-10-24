@@ -1,20 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Event } from "@/types/company";
-import { Booking } from "@/types/booking";
+import { BookedEvent, Booking } from "@/types/booking";
 import {
   getExperiencesByCompany,
-  getExperiencesByDateRange,
   getBookingById,
   getBookingsByCompany,
-  getBookingsByUser,
-  getBookingsByEvent,
-  getBookingsByDateRange,
-  createBooking,
-  updateBooking,
-  deleteBooking,
-  isDateBooked,
+  getConfirmedBookingsByEvent,
 } from "@/lib/firestore";
-import { useAuth } from "./useAuth";
 
 // New hook using experiences (events with eventType="experience")
 export const useExperiencesByCompany = (companyId: string) => {
@@ -48,7 +40,7 @@ export const useExperiencesByCompany = (companyId: string) => {
 
 // Backward compatibility hook - returns Booking[] from experiences
 export const useBookingsByCompany = (companyId: string) => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<BookedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,72 +66,84 @@ export const useBookingsByCompany = (companyId: string) => {
   return { bookings, loading, error, refetch: fetchBookings };
 };
 
-export const useBookingsByUser = () => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+// export const useBookingsByUser = () => {
+//   const [bookings, setBookings] = useState<Booking[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+//   const { user } = useAuth();
 
-  const fetchBookings = useCallback(async () => {
-    if (!user?.uid) return;
+//   const fetchBookings = useCallback(async () => {
+//     if (!user?.uid) return;
 
-    try {
-      setLoading(true);
-      const data = await getBookingsByUser(user.uid);
-      setBookings(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.uid]);
+//     try {
+//       setLoading(true);
+//       const data = await getBookingsByUser(user.uid);
+//       setBookings(data);
+//       setError(null);
+//     } catch (err) {
+//       setError(err instanceof Error ? err.message : "Failed to fetch bookings");
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, [user?.uid]);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+//   useEffect(() => {
+//     fetchBookings();
+//   }, [fetchBookings]);
 
-  return { bookings, loading, error, refetch: fetchBookings };
-};
+//   return { bookings, loading, error, refetch: fetchBookings };
+// };
 
-export const useBookingsByEvent = (eventId: string) => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchBookings = useCallback(async () => {
-    if (!eventId) return;
-
-    try {
-      setLoading(true);
-      const data = await getBookingsByEvent(eventId);
-      setBookings(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
-    } finally {
-      setLoading(false);
-    }
-  }, [eventId]);
-
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
-
-  return { bookings, loading, error, refetch: fetchBookings };
-};
-
-export const useBooking = (id: string) => {
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const [loading, setLoading] = useState(true);
+export const useBookedEventById = ({
+  companyId,
+  eventId,
+}: {
+  companyId: string;
+  eventId: string;
+}) => {
+  const [booking, setBooking] = useState<BookedEvent | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchBooking = useCallback(async () => {
-    if (!id) return;
+    if (!companyId || !eventId) return;
 
     try {
       setLoading(true);
-      const data = await getBookingById(id);
+      const data = await getBookingById({ companyId, eventId });
+      setBooking(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId, eventId]);
+
+  useEffect(() => {
+    fetchBooking();
+  }, [fetchBooking, companyId, eventId]);
+
+  return { booking, loading, error, refetch: fetchBooking };
+};
+
+export const useBooking = ({
+  companyId,
+  eventId,
+}: {
+  companyId: string;
+  eventId: string;
+}) => {
+  const [booking, setBooking] = useState<BookedEvent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchBookedEvent = useCallback(async () => {
+    if (!companyId || !eventId) return;
+
+    try {
+      setLoading(true);
+      const data = await getBookingById({ companyId, eventId });
       setBooking(data);
       setError(null);
     } catch (err) {
@@ -147,171 +151,208 @@ export const useBooking = (id: string) => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [companyId, eventId]);
 
   useEffect(() => {
-    fetchBooking();
-  }, [fetchBooking]);
+    fetchBookedEvent();
+  }, [fetchBookedEvent]);
 
-  return { booking, loading, error, refetch: fetchBooking };
+  return { booking, loading, error, refetch: fetchBookedEvent };
 };
 
-// New hook for experiences by date range
-export const useExperiencesByDateRange = (
-  companyId: string,
-  startDate: string,
-  endDate: string
-) => {
-  const [experiences, setExperiences] = useState<Event[]>([]);
+export const useConfirmedBookingsByEvent = ({
+  companyId,
+  eventId,
+}: {
+  companyId: string;
+  eventId: string;
+}) => {
+  const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchExperiences = useCallback(async () => {
-    if (!companyId || !startDate || !endDate) return;
+  const fetchConfirmedBookings = useCallback(async () => {
+    if (!companyId || !eventId) return;
 
     try {
       setLoading(true);
-      const data = await getExperiencesByDateRange(
-        companyId,
-        startDate,
-        endDate
-      );
-      setExperiences(data);
+      const data = await getConfirmedBookingsByEvent({ companyId, eventId });
+      setConfirmedBookings(data);
       setError(null);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch experiences"
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch confirmed bookings"
       );
     } finally {
       setLoading(false);
     }
-  }, [companyId, startDate, endDate]);
+  }, [companyId, eventId]);
 
   useEffect(() => {
-    fetchExperiences();
-  }, [fetchExperiences]);
+    fetchConfirmedBookings();
+  }, [fetchConfirmedBookings]);
 
-  return { experiences, loading, error, refetch: fetchExperiences };
+  return { confirmedBookings, loading, error, refetch: fetchConfirmedBookings };
 };
+
+// New hook for experiences by date range
+// export const useExperiencesByDateRange = (
+//   companyId: string,
+//   startDate: string,
+//   endDate: string
+// ) => {
+//   const [experiences, setExperiences] = useState<Event[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+
+//   const fetchExperiences = useCallback(async () => {
+//     if (!companyId || !startDate || !endDate) return;
+
+//     try {
+//       setLoading(true);
+//       const data = await getExperiencesByDateRange(
+//         companyId,
+//         startDate,
+//         endDate
+//       );
+//       setExperiences(data);
+//       setError(null);
+//     } catch (err) {
+//       setError(
+//         err instanceof Error ? err.message : "Failed to fetch experiences"
+//       );
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, [companyId, startDate, endDate]);
+
+//   useEffect(() => {
+//     fetchExperiences();
+//   }, [fetchExperiences]);
+
+//   return { experiences, loading, error, refetch: fetchExperiences };
+// };
 
 // Backward compatibility hook
-export const useBookingsByDateRange = (
-  companyId: string,
-  startDate: string,
-  endDate: string
-) => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// export const useBookingsByDateRange = (
+//   companyId: string,
+//   startDate: string,
+//   endDate: string
+// ) => {
+//   const [bookings, setBookings] = useState<Booking[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
 
-  const fetchBookings = useCallback(async () => {
-    if (!companyId || !startDate || !endDate) return;
+//   const fetchBookings = useCallback(async () => {
+//     if (!companyId || !startDate || !endDate) return;
 
-    try {
-      setLoading(true);
-      const data = await getBookingsByDateRange(companyId, startDate, endDate);
-      setBookings(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch bookings");
-    } finally {
-      setLoading(false);
-    }
-  }, [companyId, startDate, endDate]);
+//     try {
+//       setLoading(true);
+//       const data = await getBookingsByDateRange(companyId, startDate, endDate);
+//       setBookings(data);
+//       setError(null);
+//     } catch (err) {
+//       setError(err instanceof Error ? err.message : "Failed to fetch bookings");
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, [companyId, startDate, endDate]);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+//   useEffect(() => {
+//     fetchBookings();
+//   }, [fetchBookings]);
 
-  return { bookings, loading, error, refetch: fetchBookings };
-};
+//   return { bookings, loading, error, refetch: fetchBookings };
+// };
 
-export const useCreateBooking = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// export const useCreateBooking = () => {
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
 
-  const create = async (bookingData: Omit<Booking, "id">) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const id = await createBooking(bookingData);
-      return id;
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to create booking";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+//   const create = async (bookingData: Omit<Booking, "id">) => {
+//     try {
+//       setLoading(true);
+//       setError(null);
+//       const id = await createBooking(bookingData);
+//       return id;
+//     } catch (err) {
+//       const errorMessage =
+//         err instanceof Error ? err.message : "Failed to create booking";
+//       setError(errorMessage);
+//       throw err;
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  return { create, loading, error };
-};
+//   return { create, loading, error };
+// };
 
-export const useUpdateBooking = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// export const useUpdateBooking = () => {
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
 
-  const update = async (id: string, bookingData: Partial<Booking>) => {
-    try {
-      setLoading(true);
-      setError(null);
-      await updateBooking(id, bookingData);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to update booking";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+//   const update = async (id: string, bookingData: Partial<Booking>) => {
+//     try {
+//       setLoading(true);
+//       setError(null);
+//       await updateBooking(id, bookingData);
+//     } catch (err) {
+//       const errorMessage =
+//         err instanceof Error ? err.message : "Failed to update booking";
+//       setError(errorMessage);
+//       throw err;
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  return { update, loading, error };
-};
+//   return { update, loading, error };
+// };
 
-export const useDeleteBooking = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// export const useDeleteBooking = () => {
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
 
-  const remove = async (id: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      await deleteBooking(id);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to delete booking";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+//   const remove = async (id: string) => {
+//     try {
+//       setLoading(true);
+//       setError(null);
+//       await deleteBooking(id);
+//     } catch (err) {
+//       const errorMessage =
+//         err instanceof Error ? err.message : "Failed to delete booking";
+//       setError(errorMessage);
+//       throw err;
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  return { remove, loading, error };
-};
+//   return { remove, loading, error };
+// };
 
-export const useCheckDateBooked = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// export const useCheckDateBooked = () => {
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
 
-  const checkDate = async (eventId: string, date: string): Promise<boolean> => {
-    try {
-      setLoading(true);
-      setError(null);
-      const booked = await isDateBooked(eventId, date);
-      return booked;
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to check date";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+//   const checkDate = async (eventId: string, date: string): Promise<boolean> => {
+//     try {
+//       setLoading(true);
+//       setError(null);
+//       const booked = await isDateBooked(eventId, date);
+//       return booked;
+//     } catch (err) {
+//       const errorMessage =
+//         err instanceof Error ? err.message : "Failed to check date";
+//       setError(errorMessage);
+//       throw err;
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  return { checkDate, loading, error };
-};
+//   return { checkDate, loading, error };
+// };

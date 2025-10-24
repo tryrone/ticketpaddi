@@ -3,8 +3,10 @@
 import React, { useState } from "react";
 import { Modal } from "@mantine/core";
 import { Booking } from "@/types/booking";
-import { useBookingsByEvent } from "@/hooks/useBookings";
-import { useUpdateBooking } from "@/hooks/useBookings";
+import {
+  useBookedEventById,
+  useConfirmedBookingsByEvent,
+} from "@/hooks/useBookings";
 import {
   IconCalendar,
   IconClock,
@@ -15,9 +17,13 @@ import {
   IconPhone,
   IconCheck,
   IconX,
-  IconMessage,
   IconFileText,
+  IconHash,
 } from "@tabler/icons-react";
+import {
+  amountFormatter,
+  amountFormatterWithoutCurrency,
+} from "@/utils/amountFormatter";
 
 interface BookingDetailsModalProps {
   isOpen: boolean;
@@ -25,6 +31,8 @@ interface BookingDetailsModalProps {
   eventId: string;
   eventTitle: string;
   onMessageClick?: (booking: Booking) => void;
+  companyId: string;
+  selectedBookingDate: string;
 }
 
 const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
@@ -33,29 +41,27 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
   eventId,
   eventTitle,
   onMessageClick,
+  companyId,
+  selectedBookingDate,
 }) => {
-  const { bookings, loading, refetch } = useBookingsByEvent(eventId);
-  const { update } = useUpdateBooking();
-  const [updatingBookingId, setUpdatingBookingId] = useState<string | null>(
-    null
+  const { booking, loading: bookingLoading } = useBookedEventById({
+    companyId,
+    eventId,
+  });
+  const { confirmedBookings, loading: confirmedBookingsLoading } =
+    useConfirmedBookingsByEvent({ companyId, eventId });
+
+  const loading = confirmedBookingsLoading || bookingLoading;
+
+  const bookingInConfirmedBookings = confirmedBookings.find(
+    (b) => b.event_id === booking?.id
   );
 
-  const handleStatusUpdate = async (
-    bookingId: string,
-    status: Booking["status"]
-  ) => {
-    try {
-      setUpdatingBookingId(bookingId);
-      await update(bookingId, { status });
-      refetch();
-    } catch (error) {
-      console.error("Failed to update booking status:", error);
-    } finally {
-      setUpdatingBookingId(null);
-    }
-  };
+  const selectedDateIsAvailable = Object.keys(
+    booking?.datesAvailability || {}
+  ).some((date) => date === selectedBookingDate);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: Booking["status"]) => {
     const statusConfig = {
       pending: { color: "bg-yellow-100 text-yellow-800", icon: IconClock },
       confirmed: { color: "bg-green-100 text-green-800", icon: IconCheck },
@@ -111,7 +117,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
           </div>
-        ) : bookings.length === 0 ? (
+        ) : booking === null || !selectedDateIsAvailable ? (
           <div className="text-center py-12 text-gray-400">
             <IconCalendar size={48} className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">No bookings yet</p>
@@ -128,63 +134,69 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                     Total Bookings
                   </p>
                   <p className="text-2xl font-bold text-blue-600">
-                    {bookings.length}
+                    {bookingInConfirmedBookings
+                      ? bookingInConfirmedBookings?.quantity
+                      : booking?.attendees}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-blue-900">Confirmed</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {bookings.filter((b) => b.status === "confirmed").length}
+                    {bookingInConfirmedBookings
+                      ? bookingInConfirmedBookings?.paid_ticket_ids?.length
+                      : 0}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-blue-900">Revenue</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    {bookings[0]?.currency}{" "}
-                    {bookings.reduce((sum, b) => sum + b.price, 0).toFixed(2)}
+                    {bookingInConfirmedBookings
+                      ? amountFormatter({
+                          amount: bookingInConfirmedBookings?.grand_total,
+                        })
+                      : "N/A"}
                   </p>
                 </div>
               </div>
             </div>
 
-            {bookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      {getStatusBadge(booking.status)}
-                      {getPaymentBadge(booking.paymentStatus)}
+            <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    {bookingInConfirmedBookings?.status &&
+                      getStatusBadge(bookingInConfirmedBookings?.status)}
+                    {!bookingInConfirmedBookings?.status &&
+                      getPaymentBadge(booking?.status)}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center text-gray-600">
+                      <IconCalendar size={16} className="mr-2 text-gray-400" />
+                      {new Date(selectedBookingDate).toLocaleDateString()}
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center text-gray-600">
-                        <IconCalendar
-                          size={16}
-                          className="mr-2 text-gray-400"
-                        />
-                        {new Date(booking.bookedDate).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <IconClock size={16} className="mr-2 text-gray-400" />
-                        {booking.bookedTime}
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <IconMapPin size={16} className="mr-2 text-gray-400" />
-                        {booking.location}
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <IconCurrencyDollar
-                          size={16}
-                          className="mr-2 text-gray-400"
-                        />
-                        {booking.currency} {booking.price}
-                      </div>
+                    <div className="flex items-center text-gray-600">
+                      <IconClock size={16} className="mr-2 text-gray-400" />
+                      {bookingInConfirmedBookings
+                        ? new Date(
+                            bookingInConfirmedBookings?.time_created
+                          ).toLocaleTimeString()
+                        : new Date(booking?.createdAt).toLocaleTimeString()}
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <IconMapPin size={16} className="mr-2 text-gray-400" />
+                      {booking?.location}
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <IconHash size={16} className="mr-2 text-gray-400" />
+                      {amountFormatterWithoutCurrency({
+                        amount: booking?.price,
+                      })}
                     </div>
                   </div>
                 </div>
+              </div>
 
+              {bookingInConfirmedBookings && (
                 <div className="border-t border-gray-200 pt-3 mb-3">
                   <p className="text-sm font-medium text-gray-700 mb-2">
                     Customer Information
@@ -192,37 +204,40 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center text-gray-600">
                       <IconUser size={16} className="mr-2 text-gray-400" />
-                      {booking.bookerName}
+                      {bookingInConfirmedBookings?.customer_name}
                     </div>
                     <div className="flex items-center text-gray-600">
                       <IconMail size={16} className="mr-2 text-gray-400" />
-                      {booking.bookerEmail}
+                      {bookingInConfirmedBookings?.customer_email}
                     </div>
-                    {booking.bookerPhone && (
+                    {bookingInConfirmedBookings?.customer_phone && (
                       <div className="flex items-center text-gray-600">
                         <IconPhone size={16} className="mr-2 text-gray-400" />
-                        {booking.bookerPhone}
+                        {bookingInConfirmedBookings?.customer_phone}
                       </div>
                     )}
                     <div className="flex items-center text-gray-600">
                       <IconUser size={16} className="mr-2 text-gray-400" />
-                      {booking.numberOfAttendees} attendee
-                      {booking.numberOfAttendees > 1 ? "s" : ""}
+                      {bookingInConfirmedBookings?.quantity} attendee
+                      {bookingInConfirmedBookings?.quantity > 1 ? "s" : ""}
                     </div>
                   </div>
                 </div>
+              )}
 
-                {booking.notes && (
-                  <div className="border-t border-gray-200 pt-3 mb-3">
-                    <p className="text-sm font-medium text-gray-700 mb-1">
-                      <IconFileText size={16} className="inline mr-1" />
-                      Notes
-                    </p>
-                    <p className="text-sm text-gray-600">{booking.notes}</p>
-                  </div>
-                )}
+              {bookingInConfirmedBookings?.notes && (
+                <div className="border-t border-gray-200 pt-3 mb-3">
+                  <p className="text-sm font-medium text-gray-700 mb-1">
+                    <IconFileText size={16} className="inline mr-1" />
+                    Notes
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {bookingInConfirmedBookings?.notes}
+                  </p>
+                </div>
+              )}
 
-                <div className="flex items-center space-x-2 pt-3 border-t border-gray-200">
+              {/* <div className="flex items-center space-x-2 pt-3 border-t border-gray-200">
                   {booking.status === "pending" && (
                     <>
                       <button
@@ -266,9 +281,8 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                     <IconMessage size={16} className="inline mr-1" />
                     Message
                   </button>
-                </div>
-              </div>
-            ))}
+                </div> */}
+            </div>
           </div>
         )}
       </div>
