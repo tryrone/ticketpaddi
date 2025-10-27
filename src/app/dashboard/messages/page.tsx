@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ConversationsList from "@/components/ConversationsList";
 import MessagingPanel from "@/components/MessagingPanel";
@@ -33,6 +33,18 @@ export default function MessagesPage() {
       refetchConversations();
     });
   };
+
+  const selectFirstCompanyByDefault = useMemo(() => {
+    if (companies.length > 0 && !selectedCompanyId) {
+      return companies[0].id;
+    }
+    return selectedCompanyId;
+  }, [companies, selectedCompanyId]);
+
+  useEffect(() => {
+    if (companiesLoading || !companies.length) return;
+    setSelectedCompanyId(selectFirstCompanyByDefault);
+  }, [selectFirstCompanyByDefault, companiesLoading]);
 
   // const handleCreateConversation = async (booking: Booking) => {
   //   // Check if conversation already exists
@@ -126,7 +138,6 @@ export default function MessagesPage() {
                   conversations={conversations}
                   onConversationSelect={handleConversationSelect}
                   selectedConversationId={selectedConversation?.id}
-                  userType="user"
                   companyId={selectedCompanyId}
                 />
               </div>
@@ -135,7 +146,6 @@ export default function MessagesPage() {
               <div className="lg:col-span-2 overflow-y-scroll">
                 {selectedConversation ? (
                   <MessagingPanel
-                    userType="user"
                     companyId={selectedCompanyId}
                     conversationId={selectedConversation.id}
                     onClose={() => setSelectedConversation(null)}

@@ -2,18 +2,15 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useMessagesByConversation, useSendMessage } from "@/hooks/useMessages";
-import { useAuth } from "@/hooks/useAuth";
 import { IconSend, IconMessage, IconCheck, IconX } from "@tabler/icons-react";
 
 interface MessagingPanelProps {
-  userType: "bot" | "user" | "admin";
   onClose?: () => void;
   companyId: string;
   conversationId: string;
 }
 
 const MessagingPanel: React.FC<MessagingPanelProps> = ({
-  userType,
   onClose,
   companyId,
   conversationId,
@@ -24,12 +21,6 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
     conversationId,
   });
 
-  const otherParticipant = useMemo(() => {
-    return (
-      messages.find((message) => message.sender !== conversationId) || null
-    );
-  }, [messages, conversationId]);
-
   const { loading: sending } = useSendMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +30,14 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages]);
+
+  const sortedMessages = useMemo(() => {
+    return messages.sort((a, b) => {
+      return (
+        new Date(a.time_created).getTime() - new Date(b.time_created).getTime()
+      );
+    });
   }, [messages]);
 
   // const handleSendMessage = async (e: React.FormEvent) => {
@@ -99,18 +98,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            {/* <h3 className="text-lg font-semibold text-gray-900">
-              {companyName} &rarr;{" "}
-              {userType === "user"
-                ? "You"
-                : otherParticipant?.sender || "Unknown"}
-            </h3> */}
-            <p className="text-sm text-gray-600">
-              Chat with{" "}
-              {userType === "user"
-                ? otherParticipant?.sender || "Unknown"
-                : "The agent"}
-            </p>
+            <p className="text-sm text-gray-600">Chat with {conversationId}</p>
           </div>
           {onClose && (
             <button
@@ -129,7 +117,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : sortedMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <IconMessage size={48} className="mb-2 opacity-50" />
             <p className="text-sm">No messages yet</p>
@@ -137,7 +125,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({
           </div>
         ) : (
           <>
-            {messages.map((message, index) => {
+            {sortedMessages.map((message, index) => {
               const isOwnMessage = message.sender !== conversationId;
 
               return (

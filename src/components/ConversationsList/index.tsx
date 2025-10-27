@@ -9,7 +9,6 @@ interface ConversationsListProps {
   conversations: Conversation[];
   onConversationSelect: (conversation: Conversation) => void;
   selectedConversationId?: string;
-  userType: "bot" | "user" | "admin";
   companyId: string;
 }
 
@@ -18,7 +17,6 @@ interface ConversationItemProps {
   onConversationSelect: (conversation: Conversation) => void;
   isSelected: boolean;
   companyId: string;
-  userType: "bot" | "user" | "admin";
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
@@ -26,7 +24,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   onConversationSelect,
   isSelected,
   companyId,
-  userType,
 }) => {
   const { messages, loading } = useMessagesByConversation({
     companyId,
@@ -38,8 +35,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   }
 
   const lastMessage = messages[messages.length - 1];
-  const otherParticipant =
-    userType === "user" ? lastMessage.sender : lastMessage.sender;
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -86,7 +81,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-600 mb-1">{otherParticipant}</p>
+          <p className="text-xs text-gray-600 mb-1">{conversation?.id}</p>
           {lastMessage?.content && (
             <p className="text-sm text-gray-500 truncate">
               {lastMessage?.content}
@@ -111,7 +106,6 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   conversations,
   onConversationSelect,
   selectedConversationId,
-  userType,
   companyId,
 }) => {
   if (!conversations || conversations.length === 0) {
@@ -136,7 +130,6 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
             onConversationSelect={onConversationSelect}
             isSelected={isSelected}
             companyId={companyId}
-            userType={userType}
           />
         );
       })}
