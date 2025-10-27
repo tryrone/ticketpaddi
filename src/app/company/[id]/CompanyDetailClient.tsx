@@ -12,8 +12,10 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 import EventCard from "@/components/EventCard";
-import EventModal from "@/components/EventModal";
+import CreateEventModal from "@/components/EventModal";
+import EventDetailModal from "@/components/EventDetailModal";
 import { useEventModal } from "@/hooks/useEventModal";
+import { useEventDetailModal } from "@/hooks/useEventDetailModal";
 import { Event } from "@/types/company";
 import { useCompany, useEventsByCompany } from "@/hooks/useFirestore";
 import { Select } from "@mantine/core";
@@ -42,8 +44,17 @@ const CompanyDetailClient = () => {
   const [priceRange, setPriceRange] = useState("all");
   const [category, setCategory] = useState("all");
 
-  // Event modal hook
+  // Event modal hooks
   const { isOpen, openModal, closeModal, handleSuccess } = useEventModal();
+  const {
+    isOpen: isDetailOpen,
+    selectedEvent,
+    openModal: openDetailModal,
+    closeModal: closeDetailModal,
+    handleFavorite,
+    handleBook,
+    handleShare,
+  } = useEventDetailModal();
 
   // Update filtered events when events change
   useEffect(() => {
@@ -134,8 +145,7 @@ const CompanyDetailClient = () => {
   }
 
   const handleViewEvent = (event: Event) => {
-    // Navigate to event detail page
-    console.log("Viewing event:", event.title);
+    openDetailModal(event);
   };
 
   // Loading state
@@ -389,8 +399,18 @@ const CompanyDetailClient = () => {
         )}
       </main>
 
+      {/* Event Detail Modal */}
+      <EventDetailModal
+        isOpen={isDetailOpen}
+        onClose={closeDetailModal}
+        event={selectedEvent}
+        onFavorite={handleFavorite}
+        onBook={handleBook}
+        onShare={handleShare}
+      />
+
       {/* Event Modal */}
-      <EventModal
+      <CreateEventModal
         isOpen={isOpen}
         onClose={closeModal}
         onSuccess={(event) => {

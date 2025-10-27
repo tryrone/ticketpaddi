@@ -308,12 +308,12 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
                             >
                               View Details
                             </Menu.Item>
-                            <Menu.Item
+                            {/* <Menu.Item
                               leftSection={<IconEdit size={14} />}
                               onClick={() => onEdit?.(company)}
                             >
                               Edit Company
-                            </Menu.Item>
+                            </Menu.Item> */}
                             <Menu.Divider />
                             <Menu.Item
                               leftSection={<IconTrash size={14} />}
