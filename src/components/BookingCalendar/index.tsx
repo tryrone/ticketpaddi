@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Event } from "@/types/company";
 import {
   IconChevronLeft,
@@ -12,22 +12,99 @@ import {
   IconUser,
   IconCheck,
   IconX,
+  IconLoader,
 } from "@tabler/icons-react";
 import Image from "next/image";
+import { isDateBooked } from "@/lib/firestore";
+import {
+  useBookedEventById,
+  useConfirmedBookingsByEvent,
+} from "@/hooks/useBookings";
 
 interface BookingCalendarProps {
   bookings: Event[]; // Now accepts Event[] (experiences)
-  onBookingClick?: (booking: Event) => void;
+  onBookingClick?: (booking: Event, date: string) => void;
   loading?: boolean;
+  companyId?: string; // Required to check booking status
 }
 
 const BookingCalendar: React.FC<BookingCalendarProps> = ({
   bookings,
   onBookingClick,
   loading,
+  companyId,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Event | null>(null);
+  const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const { booking, loading: bookingLoading } = useBookedEventById({
+    companyId: companyId || "",
+    eventId: selectedBooking?.id || "",
+  });
+
+  const { confirmedBookings, loading: confirmedBookingsLoading } =
+    useConfirmedBookingsByEvent({
+      companyId: companyId || "",
+      eventId: selectedBooking?.id || "",
+    });
+
+  const selectedDateIsBooked = useMemo(() => {
+    return booking?.dateAvailability?.[selectedDate || ""] === "booked";
+  }, [confirmedBookings, selectedDate]);
+
+  // Check booked dates when component mounts or companyId/eventId changes
+  useEffect(() => {
+    const checkBookedDates = async () => {
+      if (!companyId) return;
+
+      const bookedDatesSet = new Set<string>();
+
+      // Get all dates from bookings to check their status
+      const allDates = new Set<string>();
+      bookings.forEach((booking) => {
+        if (booking.availableDates) {
+          booking.availableDates.forEach((date) => allDates.add(date));
+        }
+        if (booking.dateConfiguration?.selectedDates) {
+          booking.dateConfiguration.selectedDates.forEach((date) =>
+            allDates.add(date)
+          );
+        }
+        if (booking.date) {
+          allDates.add(booking.date);
+        }
+      });
+
+      // Check each date's booking status for each event
+      for (const date of allDates) {
+        for (const booking of bookings) {
+          try {
+            const isBooked = await isDateBooked({
+              companyId,
+              eventId: booking.id,
+              date,
+            });
+
+            if (isBooked) {
+              bookedDatesSet.add(date);
+              break; // If any event has this date booked, mark it as booked
+            }
+          } catch (error) {
+            console.error(
+              `Error checking booking status for date ${date}:`,
+              error
+            );
+          }
+        }
+      }
+
+      setBookedDates(bookedDatesSet);
+    };
+
+    checkBookedDates();
+  }, [companyId, bookings]);
 
   const daysInMonth = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -110,6 +187,32 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     return bookingsByDate.get(dateStr) || [];
   };
 
+  const getDateStatus = (
+    day: number
+  ): "available" | "booked" | "pending" | "none" => {
+    const dateStr = `${daysInMonth.year}-${String(
+      daysInMonth.month + 1
+    ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+    const dayBookings = getBookingsForDate(day);
+    if (dayBookings.length === 0) {
+      return "none";
+    }
+
+    // Check if this date is booked
+    if (bookedDates.has(dateStr)) {
+      return "booked";
+    }
+
+    // Check if this date is pending
+    // if (bookingsByDate.has(dateStr)) {
+    //   return "pending";
+    // }
+
+    // If there are bookings but not booked, it's available
+    return "available";
+  };
+
   const handlePrevMonth = () => {
     setCurrentDate(
       new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
@@ -123,13 +226,25 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   };
 
   const handleDayClick = (day: number) => {
+    const dateStr = `${daysInMonth.year}-${String(
+      daysInMonth.month + 1
+    ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dayBookings = getBookingsForDate(day);
     if (dayBookings.length > 0) {
       setSelectedBooking(dayBookings[0]);
       if (onBookingClick) {
-        onBookingClick(dayBookings[0]);
+        onBookingClick(dayBookings[0], dateStr);
+        setSelectedDate(dateStr);
       }
     }
+  };
+
+  const isBooked = (day: number) => {
+    return getDateStatus(day) === "booked";
+  };
+
+  const isAvailable = (day: number) => {
+    return getDateStatus(day) === "available";
   };
 
   const monthNames = [
@@ -166,47 +281,70 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     // Actual days
     for (let day = 1; day <= daysCount; day++) {
       const dayBookings = getBookingsForDate(day);
-      const hasBookings = dayBookings.length > 0;
+      const dateStatus = getDateStatus(day);
+
       const isToday =
         day === new Date().getDate() &&
         currentDate.getMonth() === new Date().getMonth() &&
         currentDate.getFullYear() === new Date().getFullYear();
 
+      // Determine styling based on date status
+      let dayStyling =
+        "aspect-square p-2 border border-gray-200 cursor-pointer transition-colors hover:bg-gray-50";
+
+      if (isToday) {
+        dayStyling += " bg-blue-50 border-blue-300";
+      } else if (dateStatus === "available") {
+        dayStyling += " bg-blue-50 border-blue-300 hover:bg-blue-100";
+      } else if (dateStatus === "booked") {
+        dayStyling += " bg-green-50 border-green-300 hover:bg-green-100";
+      } else if (dateStatus === "pending") {
+        dayStyling += " bg-yellow-50 border-yellow-300 hover:bg-yellow-100";
+      }
+
       days.push(
         <div
           key={day}
           onClick={() => handleDayClick(day)}
-          className={`aspect-square p-2 border border-gray-200 cursor-pointer transition-colors hover:bg-gray-50 ${
-            isToday ? "bg-blue-50 border-blue-300" : ""
-          } ${
-            hasBookings ? "bg-green-50 border-green-300 hover:bg-green-100" : ""
-          }`}
+          className={dayStyling}
         >
           <div className="flex flex-col h-full">
             <div
               className={`text-sm font-medium mb-1 ${
                 isToday
                   ? "text-blue-600"
-                  : hasBookings
+                  : dateStatus === "available"
+                  ? "text-blue-700"
+                  : dateStatus === "booked"
                   ? "text-green-700"
+                  : dateStatus === "pending"
+                  ? "text-yellow-700"
                   : "text-gray-700"
               }`}
             >
               {day}
             </div>
-            {hasBookings && (
+            {dayBookings.length > 0 && (
               <div className="flex-1 overflow-hidden">
                 {dayBookings.slice(0, 2).map((booking) => (
                   <div
                     key={booking.id}
-                    className="text-xs truncate mb-1 px-1 py-0.5 bg-green-600 text-white rounded"
+                    className={`text-xs truncate mb-1 px-1 py-0.5 text-white rounded ${
+                      dateStatus === "booked" ? "bg-green-600" : "bg-blue-600"
+                    }`}
                     title={booking.title || ""}
                   >
                     {booking.title}
                   </div>
                 ))}
                 {dayBookings.length > 2 && (
-                  <div className="text-xs text-green-700 font-medium px-1">
+                  <div
+                    className={`text-xs font-medium px-1 ${
+                      dateStatus === "booked"
+                        ? "text-green-700"
+                        : "text-blue-700"
+                    }`}
+                  >
                     +{dayBookings.length - 2} more
                   </div>
                 )}
@@ -229,6 +367,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       // Backward compatibility for booking statuses
       pending: { color: "bg-yellow-100 text-yellow-800", icon: IconClock },
       confirmed: { color: "bg-green-100 text-green-800", icon: IconCheck },
+      paid: { color: "bg-green-100 text-green-800", icon: IconCheck },
+      booked: { color: "bg-green-100 text-green-800", icon: IconCheck },
+      available: { color: "bg-blue-100 text-blue-800", icon: IconCheck },
     };
 
     const config =
@@ -288,8 +429,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             <span className="text-gray-600">Today</span>
           </div>
           <div className="flex items-center">
-            <div className="w-4 h-4 bg-green-50 border border-green-300 rounded mr-2" />
+            <div className="w-4 h-4 bg-blue-50 border border-blue-300 rounded mr-2" />
             <span className="text-gray-600">Available Experience</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-4 h-4 bg-green-50 border border-green-300 rounded mr-2" />
+            <span className="text-gray-600">Booked Experience</span>
           </div>
         </div>
 
@@ -345,63 +490,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                         size={16}
                         className="mr-2 text-gray-400 mt-0.5"
                       />
-                      <div>
-                        {selectedBooking.dateConfiguration ? (
-                          <>
-                            {selectedBooking.dateConfiguration.type ===
-                              "range" && (
-                              <div>
-                                <span className="font-medium">Date Range:</span>
-                                <br />
-                                {selectedBooking.dateConfiguration.startDate &&
-                                  new Date(
-                                    selectedBooking.dateConfiguration.startDate
-                                  ).toLocaleDateString()}
-                                {" - "}
-                                {selectedBooking.dateConfiguration.endDate &&
-                                  new Date(
-                                    selectedBooking.dateConfiguration.endDate
-                                  ).toLocaleDateString()}
-                              </div>
-                            )}
-                            {selectedBooking.dateConfiguration.type ===
-                              "selected" && (
-                              <div>
-                                <span className="font-medium">
-                                  Multiple Dates
-                                </span>
-                                <br />
-                                <span className="text-xs">
-                                  {selectedBooking.dateConfiguration
-                                    .selectedDates?.length || 0}{" "}
-                                  dates selected
-                                </span>
-                              </div>
-                            )}
-                            {selectedBooking.dateConfiguration.type ===
-                              "monthly" && (
-                              <div>
-                                <span className="font-medium">
-                                  Monthly on day{" "}
-                                  {selectedBooking.dateConfiguration.monthlyDay}
-                                </span>
-                              </div>
-                            )}
-                          </>
-                        ) : selectedBooking.availableDates &&
-                          selectedBooking.availableDates.length > 0 ? (
-                          <div>
-                            <span className="font-medium">Multiple Dates</span>
-                            <br />
-                            <span className="text-xs">
-                              {selectedBooking.availableDates.length} dates
-                              available
-                            </span>
-                          </div>
-                        ) : (
-                          new Date(selectedBooking.date).toLocaleDateString()
-                        )}
-                      </div>
+                      {selectedBooking.date}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <IconClock size={16} className="mr-2 text-gray-400" />
@@ -420,7 +509,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <IconUser size={16} className="mr-2 text-gray-400" />
-                      {selectedBooking.attendees} /{" "}
+                      {confirmedBookings.length} /{" "}
                       {selectedBooking.maxAttendees} attendees
                     </div>
                   </div>
@@ -430,7 +519,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                       <span className="text-sm font-medium text-gray-700">
                         Status
                       </span>
-                      {getStatusBadge(selectedBooking.status)}
+                      {getStatusBadge(
+                        selectedDateIsBooked ? "booked" : "available"
+                      )}
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700">
@@ -459,6 +550,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                       </div>
                     </div>
                   )}
+                </div>
+              ) : confirmedBookingsLoading ? (
+                <div className="text-center text-gray-400 py-8">
+                  <IconLoader size={48} className="mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Loading bookings details...</p>
                 </div>
               ) : (
                 <div className="text-center text-gray-400 py-8">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Modal } from "@mantine/core";
 import { Booking } from "@/types/booking";
 import {
@@ -57,9 +57,13 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
     (b) => b.event_id === booking?.id
   );
 
-  const selectedDateIsAvailable = Object.keys(
-    booking?.datesAvailability || {}
-  ).some((date) => date === selectedBookingDate);
+  const selectedDateIsAvailable = useMemo(() => {
+    return Object.keys(booking?.dateAvailability || {}).some(
+      (date) =>
+        date === selectedBookingDate &&
+        booking?.dateAvailability?.[date] === "booked"
+    );
+  }, [booking?.dateAvailability, selectedBookingDate]);
 
   const getStatusBadge = (status: Booking["status"]) => {
     const statusConfig = {
@@ -67,6 +71,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
       confirmed: { color: "bg-green-100 text-green-800", icon: IconCheck },
       completed: { color: "bg-blue-100 text-blue-800", icon: IconCheck },
       cancelled: { color: "bg-red-100 text-red-800", icon: IconX },
+      paid: { color: "bg-green-100 text-green-800", icon: IconCheck },
     };
 
     const config =

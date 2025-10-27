@@ -28,8 +28,9 @@ export default function CalendarPage() {
     defaultCompanyId || selectedCompanyId
   );
 
-  const handleBookingClick = (booking: Event) => {
-    setSelectedBooking(booking);
+  const handleBookingClick = (booking: Event, date: string) => {
+    const bookingCopy = { ...booking, date: date };
+    setSelectedBooking(bookingCopy);
     setShowBookingDetails(true);
   };
 
@@ -119,6 +120,7 @@ export default function CalendarPage() {
               bookings={experiences}
               onBookingClick={handleBookingClick}
               loading={bookingsLoading}
+              companyId={selectedCompany?.id}
             />
           )}
         </div>

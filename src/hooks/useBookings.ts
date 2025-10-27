@@ -169,7 +169,7 @@ export const useConfirmedBookingsByEvent = ({
   eventId: string;
 }) => {
   const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchConfirmedBookings = useCallback(async () => {

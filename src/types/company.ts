@@ -55,6 +55,7 @@ export interface Event {
   featured: boolean;
   isTemplate?: boolean; // True if this is a template that can be applied to multiple dates
   availableDates?: string[]; // Array of dates this template is available for
+  dateAvailability?: { [key: string]: string }; // Map of dates to their availability status ("available", "booked", "pending")
 
   // Experience-specific fields
   seatRanges?: SeatRange[]; // For experiences with different seat tiers

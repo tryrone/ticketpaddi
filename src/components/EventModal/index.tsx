@@ -323,6 +323,43 @@ const EventModal: React.FC<EventModalProps> = ({
           }),
         };
 
+        // Create dateAvailability map based on date configuration
+        const dateAvailability: Record<string, string> = {};
+
+        if (dateConfigType === "selected" && selectedDates.length > 0) {
+          // For selected dates, mark all as available
+          selectedDates.forEach((date) => {
+            dateAvailability[date] = "available";
+          });
+        } else if (
+          dateConfigType === "range" &&
+          dateRange.startDate &&
+          dateRange.endDate
+        ) {
+          // For date range, generate all dates in range and mark as available
+          const start = new Date(dateRange.startDate);
+          const end = new Date(dateRange.endDate);
+          const current = new Date(start);
+
+          while (current <= end) {
+            const dateStr = current.toISOString().split("T")[0];
+            dateAvailability[dateStr] = "available";
+            current.setDate(current.getDate() + 1);
+          }
+        } else if (dateConfigType === "monthly" && monthlyDay) {
+          // For monthly recurrence, generate dates for next 12 months
+          const today = new Date();
+          for (let i = 0; i < 12; i++) {
+            const date = new Date(
+              today.getFullYear(),
+              today.getMonth() + i,
+              parseInt(monthlyDay)
+            );
+            const dateStr = date.toISOString().split("T")[0];
+            dateAvailability[dateStr] = "available";
+          }
+        }
+
         eventData = {
           ...eventData,
           date:
@@ -333,6 +370,7 @@ const EventModal: React.FC<EventModalProps> = ({
           maxAttendees: Math.max(...seatRanges.map((r) => r.max)),
           seatRanges,
           dateConfiguration,
+          dateAvailability,
           isTemplate: true,
         };
       }

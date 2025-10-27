@@ -36,7 +36,7 @@ export interface BookedEvent {
   currency: string;
   date: string;
   dateConfiguration: DateConfiguration;
-  datesAvailability: { [key: string]: boolean }[];
+  dateAvailability: { [key: string]: string };
   description: string;
   eventType: string;
   featured: boolean;

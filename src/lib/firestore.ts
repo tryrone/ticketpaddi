@@ -664,19 +664,26 @@ export const isDateBooked = async ({
 }): Promise<boolean> => {
   try {
     checkFirebaseConnection();
-    const bookingsRef = collection(
-      db,
-      "ticket-companies",
-      companyId,
-      "events",
-      eventId
-    );
-    const q = query(
-      bookingsRef,
-      where("dateAvailability", "array-contains", date)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.size > 0;
+    // Get the event document directly
+    const eventRef = doc(db, "ticket-companies", companyId, "events", eventId);
+    const eventDoc = await getDoc(eventRef);
+
+    if (!eventDoc.exists()) {
+      return false;
+    }
+
+    const eventData = eventDoc.data();
+    const dateAvailability = eventData.dateAvailability;
+
+    if (dateAvailability && typeof dateAvailability === "object") {
+      // Check if the specific date exists and is "booked"
+
+      if (dateAvailability[date] === "booked") {
+        return true;
+      }
+    }
+
+    return false;
   } catch (error) {
     console.error("Error checking if date is booked:", error);
     throw error;
