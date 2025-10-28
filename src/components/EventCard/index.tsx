@@ -7,6 +7,7 @@ import {
   IconMapPin,
   IconUsers,
   IconClock,
+  IconEdit,
 } from "@tabler/icons-react";
 import { Event } from "@/types/company";
 import Image from "next/image";
@@ -15,9 +16,15 @@ interface EventCardProps {
   event: Event;
   onFavorite?: (event: Event) => void;
   onView?: (event: Event) => void;
+  onEdit?: (event: Event) => void;
 }
 
-const EventCard: React.FC<EventCardProps> = ({ event, onFavorite, onView }) => {
+const EventCard: React.FC<EventCardProps> = ({
+  event,
+  onFavorite,
+  onView,
+  onEdit,
+}) => {
   const formatPrice = (price: number, currency: string) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -65,19 +72,36 @@ const EventCard: React.FC<EventCardProps> = ({ event, onFavorite, onView }) => {
           unoptimized={true}
         />
 
-        {/* Favorite Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onFavorite?.(event);
-          }}
-          className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-        >
-          <IconHeart
-            size={16}
-            className="text-gray-600 hover:text-red-500 transition-colors"
-          />
-        </button>
+        {/* Action Buttons */}
+        <div className="absolute top-3 right-3 flex space-x-2">
+          {/* Edit Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit?.(event);
+            }}
+            className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+          >
+            <IconEdit
+              size={16}
+              className="text-gray-600 hover:text-blue-500 transition-colors"
+            />
+          </button>
+
+          {/* Favorite Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onFavorite?.(event);
+            }}
+            className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+          >
+            <IconHeart
+              size={16}
+              className="text-gray-600 hover:text-red-500 transition-colors"
+            />
+          </button>
+        </div>
 
         {/* Featured Badge */}
         {event.featured && (

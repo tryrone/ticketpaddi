@@ -44,7 +44,7 @@ export default function MessagesPage() {
   useEffect(() => {
     if (companiesLoading || !companies.length) return;
     setSelectedCompanyId(selectFirstCompanyByDefault);
-  }, [selectFirstCompanyByDefault, companiesLoading]);
+  }, [selectFirstCompanyByDefault, companiesLoading, companies]);
 
   // const handleCreateConversation = async (booking: Booking) => {
   //   // Check if conversation already exists

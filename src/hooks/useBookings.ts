@@ -202,7 +202,7 @@ export const useCreateBooking = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const create = async (bookingData: Omit<Booking, "id">) => {
+  const create = async (_bookingData: Omit<Booking, "id">) => {
     try {
       setLoading(true);
       setError(null);

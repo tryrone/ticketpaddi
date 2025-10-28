@@ -39,7 +39,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { booking, loading: bookingLoading } = useBookedEventById({
+  const { booking } = useBookedEventById({
     companyId: companyId || "",
     eventId: selectedBooking?.id || "",
   });
@@ -52,7 +52,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const selectedDateIsBooked = useMemo(() => {
     return booking?.dateAvailability?.[selectedDate || ""] === "booked";
-  }, [confirmedBookings, selectedDate]);
+  }, [selectedDate, booking]);
 
   // Check booked dates when component mounts or companyId/eventId changes
   useEffect(() => {
@@ -239,13 +239,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     }
   };
 
-  const isBooked = (day: number) => {
-    return getDateStatus(day) === "booked";
-  };
+  // const isBooked = (day: number) => {
+  //   return getDateStatus(day) === "booked";
+  // };
 
-  const isAvailable = (day: number) => {
-    return getDateStatus(day) === "available";
-  };
+  // const isAvailable = (day: number) => {
+  //   return getDateStatus(day) === "available";
+  // };
 
   const monthNames = [
     "January",

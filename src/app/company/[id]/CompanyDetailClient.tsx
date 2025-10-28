@@ -14,8 +14,10 @@ import {
 import EventCard from "@/components/EventCard";
 import CreateEventModal from "@/components/EventModal";
 import EventDetailModal from "@/components/EventDetailModal";
+import EditEventModal from "@/components/EditEventModal";
 import { useEventModal } from "@/hooks/useEventModal";
 import { useEventDetailModal } from "@/hooks/useEventDetailModal";
+import { useEditEventModal } from "@/hooks/useEditEventModal";
 import { Event } from "@/types/company";
 import { useCompany, useEventsByCompany } from "@/hooks/useFirestore";
 import { Select } from "@mantine/core";
@@ -55,6 +57,20 @@ const CompanyDetailClient = () => {
     handleBook,
     handleShare,
   } = useEventDetailModal();
+  const {
+    isOpen: isEditOpen,
+    selectedEvent: editEvent,
+    openModal: openEditModal,
+    closeModal: closeEditModal,
+  } = useEditEventModal();
+
+  const handleEditSuccess = (updatedEvent: Event) => {
+    // Update the events list with the updated event
+    setFilteredEvents((prev) =>
+      prev.map((event) => (event.id === updatedEvent.id ? updatedEvent : event))
+    );
+    closeEditModal();
+  };
 
   // Update filtered events when events change
   useEffect(() => {
@@ -146,6 +162,10 @@ const CompanyDetailClient = () => {
 
   const handleViewEvent = (event: Event) => {
     openDetailModal(event);
+  };
+
+  const handleEditEvent = (event: Event) => {
+    openEditModal(event);
   };
 
   // Loading state
@@ -381,6 +401,7 @@ const CompanyDetailClient = () => {
                 event={event}
                 // onFavorite={handleFavorite}
                 onView={handleViewEvent}
+                onEdit={handleEditEvent}
               />
             ))}
           </div>
@@ -407,6 +428,14 @@ const CompanyDetailClient = () => {
         onFavorite={handleFavorite}
         onBook={handleBook}
         onShare={handleShare}
+      />
+
+      {/* Edit Event Modal */}
+      <EditEventModal
+        isOpen={isEditOpen}
+        onClose={closeEditModal}
+        event={editEvent}
+        onSuccess={handleEditSuccess}
       />
 
       {/* Event Modal */}

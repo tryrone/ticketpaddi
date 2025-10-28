@@ -13,7 +13,6 @@ export interface Company {
 
 export interface CompanyTableProps {
   companies: Company[];
-  onEdit?: (company: Company) => void;
   onDelete?: (company: Company) => void;
   onView?: (company: Company) => void;
   onAddCompany?: () => void;

@@ -5,7 +5,6 @@ import {
   IconDots,
   IconSearch,
   IconPlus,
-  IconEdit,
   IconTrash,
   IconEye,
   IconChevronUp,
@@ -17,7 +16,6 @@ import { ActionIcon, Loader, Menu, Select } from "@mantine/core";
 
 const CompanyTable: React.FC<CompanyTableProps> = ({
   companies,
-  onEdit,
   onDelete,
   onView,
   onAddCompany,

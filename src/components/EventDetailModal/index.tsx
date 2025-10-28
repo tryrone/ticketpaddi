@@ -1,12 +1,11 @@
 "use client";
 
 import React from "react";
-import { Modal, Button, Badge, Divider } from "@mantine/core";
+import { Modal, Button, Badge } from "@mantine/core";
 import {
   IconCalendar,
   IconClock,
   IconMapPin,
-  IconCurrencyDollar,
   IconUsers,
   IconTag,
   IconStar,
@@ -14,7 +13,6 @@ import {
   IconX,
   IconHeart,
   IconShare,
-  IconBookmark,
 } from "@tabler/icons-react";
 import { Event } from "@/types/company";
 import Image from "next/image";
@@ -55,31 +53,31 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
     });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "upcoming":
-        return "blue";
-      case "ongoing":
-        return "green";
-      case "completed":
-        return "gray";
-      case "cancelled":
-        return "red";
-      default:
-        return "gray";
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "upcoming":
+  //       return "blue";
+  //     case "ongoing":
+  //       return "green";
+  //     case "completed":
+  //       return "gray";
+  //     case "cancelled":
+  //       return "red";
+  //     default:
+  //       return "gray";
+  //   }
+  // };
 
-  const getEventTypeColor = (eventType?: string) => {
-    switch (eventType) {
-      case "event":
-        return "purple";
-      case "experience":
-        return "orange";
-      default:
-        return "blue";
-    }
-  };
+  // const getEventTypeColor = (eventType?: string) => {
+  //   switch (eventType) {
+  //     case "event":
+  //       return "purple";
+  //     case "experience":
+  //       return "orange";
+  //     default:
+  //       return "blue";
+  //   }
+  // };
 
   return (
     <Modal

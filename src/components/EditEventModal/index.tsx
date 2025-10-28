@@ -1,31 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal } from "@mantine/core";
-import { useCreateEvent } from "@/hooks/useFirestore";
-import { Event, SeatRange, DateConfiguration, Company } from "@/types/company";
+import { useUpdateEvent } from "@/hooks/useFirestore";
+import { Event, SeatRange, DateConfiguration } from "@/types/company";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { checkExperienceDateConflicts } from "@/lib/firestore";
 import Button from "../Button";
-import { TypeSelectionStep } from "./TypeSelectionStep";
-import { BasicInfoFields } from "./BasicInfoFields";
-import { EventDetailsFields } from "./EventDetailsFields";
-import { ExperienceDetailsFields } from "./ExperienceDetailsFields";
+import { BasicInfoFields } from "../EventModal/BasicInfoFields";
+import { EventDetailsFields } from "../EventModal/EventDetailsFields";
+import { ExperienceDetailsFields } from "../EventModal/ExperienceDetailsFields";
 
-interface EventModalProps {
+interface EditEventModalProps {
   isOpen: boolean;
   onClose: () => void;
+  event: Event | null;
   onSuccess?: (event: Event) => void;
-  company?: Company;
 }
 
-const EventModal: React.FC<EventModalProps> = ({
+const EditEventModal: React.FC<EditEventModalProps> = ({
   isOpen,
   onClose,
+  event,
   onSuccess,
-  company,
 }) => {
-  const { create, loading, error } = useCreateEvent();
+  const { update, loading, error } = useUpdateEvent();
   const { uploadImageWithProgress, uploading } = useImageUpload();
 
   // Form state
@@ -61,8 +60,52 @@ const EventModal: React.FC<EventModalProps> = ({
   const [monthlyDay, setMonthlyDay] = useState<string | null>(null);
   const [tempDate, setTempDate] = useState<string | null>(null);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Initialize form data when event changes
+  useEffect(() => {
+    if (event) {
+      setEventType(event.eventType || "event");
+      setFormData({
+        title: event.title || "",
+        description: event.description || "",
+        image: null,
+        date: event.date || "",
+        time: event.time || "",
+        location: event.location || "",
+        price: event.price?.toString() || "",
+        currency: event.currency || "NGN",
+        category: event.category || "",
+        maxAttendees: event.maxAttendees?.toString() || "",
+        tags: event.tags?.join(", ") || "",
+        featured: event.featured || false,
+        isTemplate: event.isTemplate || false,
+      });
+
+      // Initialize experience-specific data
+      if (event.eventType === "experience") {
+        setSeatRanges(event.seatRanges || []);
+
+        if (event.dateConfiguration) {
+          setDateConfigType(event.dateConfiguration.type);
+
+          if (event.dateConfiguration.type === "selected") {
+            setSelectedDates(event.dateConfiguration.selectedDates || []);
+          } else if (event.dateConfiguration.type === "range") {
+            setDateRange({
+              startDate: event.dateConfiguration.startDate || null,
+              endDate: event.dateConfiguration.endDate || null,
+            });
+          } else if (event.dateConfiguration.type === "monthly") {
+            setMonthlyDay(
+              event.dateConfiguration.monthlyDay?.toString() || null
+            );
+          }
+        }
+      }
+    }
+  }, [event]);
 
   // Input handlers
   const handleInputChange = (
@@ -238,17 +281,20 @@ const EventModal: React.FC<EventModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!event?.id) return;
+
     if (!validateForm()) {
       return;
     }
 
     try {
-      // Check for date conflicts if creating an experience
-      if (eventType === "experience" && company?.id) {
+      // Check for date conflicts if updating an experience
+      if (eventType === "experience" && event.companyId) {
         const datesToCheck = getDatesFromConfiguration();
         const conflictCheck = await checkExperienceDateConflicts(
-          company.id,
-          datesToCheck
+          event.companyId,
+          datesToCheck,
+          event.id // Exclude current event from conflict check
         );
 
         if (conflictCheck.hasConflict) {
@@ -267,10 +313,9 @@ const EventModal: React.FC<EventModalProps> = ({
         }
       }
 
-      let imageUrl = "";
+      let imageUrl = event.image; // Keep existing image by default
       if (formData.image) {
         const result = await uploadImageWithProgress(formData.image);
-
         if (result) {
           imageUrl = result.url;
         }
@@ -285,17 +330,12 @@ const EventModal: React.FC<EventModalProps> = ({
         eventType,
         title: formData.title,
         description: formData.description,
-        image:
-          imageUrl ||
-          "https://images.unsplash.com/photo-1511184059754-e4b5bbbcef75?q=80&w=1760&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        image: imageUrl,
         location: formData.location,
         price: parseFloat(formData.price),
         currency: formData.currency,
         category: formData.category,
-        companyId: company?.id || "",
-        companyName: company?.name || "",
-        attendees: 0,
-        status: "upcoming" as const,
+        status: event.status, // Keep existing status
         tags: tagsArray,
         featured: formData.featured,
       };
@@ -375,47 +415,23 @@ const EventModal: React.FC<EventModalProps> = ({
         };
       }
 
-      const eventId = await create(eventData);
+      await update(event.id, eventData);
 
-      const newEvent: Event = {
-        id: eventId,
+      const updatedEvent: Event = {
+        ...event,
         ...eventData,
       };
 
-      onSuccess?.(newEvent);
+      onSuccess?.(updatedEvent);
       onClose();
-
-      // Reset form
-      setFormData({
-        title: "",
-        description: "",
-        image: null,
-        date: "",
-        time: "",
-        location: "",
-        price: "",
-        currency: "USD",
-        category: "",
-        maxAttendees: "",
-        tags: "",
-        featured: false,
-        isTemplate: false,
-      });
-      setEventType(null);
-      setSeatRanges([]);
-      setSelectedDates([]);
-      setDateRange({ startDate: "", endDate: "" });
-      setMonthlyDay("");
-      setCurrentStep(0);
-      setErrors({});
     } catch (err) {
-      console.error("Failed to create event:", err);
+      console.error("Failed to update event:", err);
     }
   };
 
   // Navigation handlers
   const handleBack = () => {
-    if (currentStep > 0) {
+    if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     } else {
       onClose();
@@ -423,37 +439,20 @@ const EventModal: React.FC<EventModalProps> = ({
   };
 
   const handleNext = () => {
-    if (currentStep === 0 && eventType) {
-      setCurrentStep(1);
-    } else if (currentStep === 1) {
+    if (currentStep === 1) {
       setCurrentStep(2);
     }
   };
 
-  const handleTypeSelection = (type: "event" | "experience") => {
-    setEventType(type);
-    setCurrentStep(1);
-  };
-
   // Render step content
   const renderStepContent = () => {
-    // Step 0: Type Selection
-    if (currentStep === 0) {
-      return (
-        <TypeSelectionStep
-          company={company}
-          onSelectType={handleTypeSelection}
-        />
-      );
-    }
-
     // Step 1: Basic Info
     if (currentStep === 1 && eventType) {
       const title =
-        eventType === "event" ? "Create your event" : "Create your experience";
-      const subtitle = company
-        ? `Creating ${eventType} for ${company.name}`
-        : `Tell us about your ${eventType}`;
+        eventType === "event" ? "Edit your event" : "Edit your experience";
+      const subtitle = event
+        ? `Editing ${eventType} for ${event.companyName}`
+        : `Update your ${eventType}`;
 
       return (
         <>
@@ -480,8 +479,8 @@ const EventModal: React.FC<EventModalProps> = ({
         eventType === "event" ? "Event details" : "Experience details";
       const subtitle =
         eventType === "event"
-          ? "Add more information about your event"
-          : "Configure seat ranges and availability";
+          ? "Update information about your event"
+          : "Update seat ranges and availability";
 
       return (
         <>
@@ -547,7 +546,7 @@ const EventModal: React.FC<EventModalProps> = ({
         </div>
 
         {/* Fixed Footer Buttons */}
-        {currentStep > 0 && (
+        {currentStep >= 1 && (
           <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t border-gray-200 bg-white">
             <button
               type="button"
@@ -571,8 +570,8 @@ const EventModal: React.FC<EventModalProps> = ({
                 <Button
                   text={
                     eventType === "experience"
-                      ? "Create Experience"
-                      : "Create Event"
+                      ? "Update Experience"
+                      : "Update Event"
                   }
                   loading={loading || uploading}
                   disabled={loading || uploading}
@@ -592,4 +591,4 @@ const EventModal: React.FC<EventModalProps> = ({
   );
 };
 
-export default EventModal;
+export default EditEventModal;

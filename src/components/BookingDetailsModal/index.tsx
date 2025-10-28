@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Modal } from "@mantine/core";
 import { Booking } from "@/types/booking";
 import {
@@ -11,7 +11,6 @@ import {
   IconCalendar,
   IconClock,
   IconMapPin,
-  IconCurrencyDollar,
   IconUser,
   IconMail,
   IconPhone,
@@ -30,7 +29,6 @@ interface BookingDetailsModalProps {
   onClose: () => void;
   eventId: string;
   eventTitle: string;
-  onMessageClick?: (booking: Booking) => void;
   companyId: string;
   selectedBookingDate: string;
 }
@@ -40,7 +38,6 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
   onClose,
   eventId,
   eventTitle,
-  onMessageClick,
   companyId,
   selectedBookingDate,
 }) => {

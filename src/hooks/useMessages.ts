@@ -75,7 +75,7 @@ export const useConversationsByUser = ({
     } finally {
       setLoading(false);
     }
-  }, [userId, companyId]);
+  }, [companyId]);
 
   useEffect(() => {
     fetchConversations();
