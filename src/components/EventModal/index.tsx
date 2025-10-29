@@ -158,6 +158,14 @@ const EventModal: React.FC<EventModalProps> = ({
       newErrors.category = "Category is required";
     }
 
+    if (!formData.image) {
+      newErrors.image = "Image is required";
+    }
+
+    if (!formData.date.trim()) {
+      newErrors.date = "Date is required";
+    }
+
     if (eventType === "event") {
       if (!formData.date.trim()) {
         newErrors.date = "Event date is required";
@@ -488,6 +496,19 @@ const EventModal: React.FC<EventModalProps> = ({
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">{title}</h2>
             <p className="text-gray-600">{subtitle}</p>
+
+            <div className="mt-4 flex space-x-2">
+              {Object.keys(errors)
+                .filter((error) => errors[error])
+                .map((error) => (
+                  <div
+                    key={error}
+                    className="text-white text-sm mt-1 bg-red-500 p-2 rounded-md"
+                  >
+                    {errors[error]}
+                  </div>
+                ))}
+            </div>
           </div>
 
           {eventType === "event" ? (
@@ -535,6 +556,7 @@ const EventModal: React.FC<EventModalProps> = ({
     <Modal opened={isOpen} onClose={onClose} size="lg">
       <div className="flex flex-col h-[80vh]">
         {/* Scrollable Content */}
+
         <div className="flex-1 overflow-y-auto pr-2">
           {renderStepContent()}
 
