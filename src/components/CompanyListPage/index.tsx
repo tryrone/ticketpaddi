@@ -56,8 +56,6 @@ const CompanyListPage: React.FC = () => {
     }
   };
 
-  const handleEditCompany = () => {};
-
   const handleDeleteCompany = (company: Company) => {
     remove(company.id)
       .then(() => {
@@ -178,7 +176,6 @@ const CompanyListPage: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <CompanyTable
           companies={companies}
-          onEdit={handleEditCompany}
           onDelete={handleDeleteCompany}
           onView={handleViewCompany}
           onAddCompany={openModal}
