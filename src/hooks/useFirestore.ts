@@ -28,7 +28,7 @@ export const useCompanies = () => {
 
   const { user } = useAuth();
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getCompanies(user?.uid as FirebaseUser["uid"]);
@@ -41,11 +41,11 @@ export const useCompanies = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchCompanies();
-  }, []);
+  }, [fetchCompanies, user]);
 
   return { companies, loading, error, fetchCompanies };
 };
