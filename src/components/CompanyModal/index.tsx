@@ -217,7 +217,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
         </div>
 
         {/* Upload Logo */}
-        <div className="mb-6">
+        {/* <div className="mb-6">
           <label className="block text-sm font-medium text-gray-900 mb-2">
             Upload your logo
           </label>
@@ -257,7 +257,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Location */}
         <div className="mb-[100px]">

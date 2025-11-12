@@ -9,12 +9,16 @@ interface CalenderPickerProps {
   value?: string | null;
   onChange: (date: string | null) => void;
   placeholder?: string;
+  minDate?: string;
+  maxDate?: string;
 }
 
 const CalenderPicker: React.FC<CalenderPickerProps> = ({
   value,
   onChange,
   placeholder,
+  minDate,
+  maxDate,
 }) => {
   return (
     <div className="flex-1 px-4  py-3 border border-gray-300 outline-0 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
@@ -30,6 +34,8 @@ const CalenderPicker: React.FC<CalenderPickerProps> = ({
           <DatePicker
             value={value}
             onChange={onChange}
+            minDate={minDate}
+            maxDate={maxDate}
             className="flex-1 px-4  py-3 border border-gray-300 outline-0 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </Menu.Dropdown>

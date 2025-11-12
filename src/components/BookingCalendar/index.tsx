@@ -20,12 +20,15 @@ import {
   useBookedEventById,
   useConfirmedBookingsByEvent,
 } from "@/hooks/useBookings";
+import DateActionModal from "@/components/DateActionModal";
 
 interface BookingCalendarProps {
   bookings: Event[]; // Now accepts Event[] (experiences)
   onBookingClick?: (booking: Event, date: string) => void;
   loading?: boolean;
   companyId?: string; // Required to check booking status
+  companyBlockedDates?: string[]; // Globally blocked dates for the company
+  onBookingsUpdate?: () => void; // Callback to refresh bookings list
 }
 
 const BookingCalendar: React.FC<BookingCalendarProps> = ({
@@ -33,11 +36,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   onBookingClick,
   loading,
   companyId,
+  companyBlockedDates = [],
+  onBookingsUpdate,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Event | null>(null);
   const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dateActionModalOpen, setDateActionModalOpen] = useState(false);
+  const [dateActionModalDate, setDateActionModalDate] = useState<string>("");
 
   const { booking } = useBookedEventById({
     companyId: companyId || "",
@@ -64,8 +71,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       // Get all dates from bookings to check their status
       const allDates = new Set<string>();
       bookings.forEach((booking) => {
-        if (booking.availableDates) {
-          booking.availableDates.forEach((date) => allDates.add(date));
+        if (booking.dateAvailability) {
+          Object.keys(booking.dateAvailability).forEach((date) =>
+            allDates.add(date)
+          );
         }
         if (booking.dateConfiguration?.selectedDates) {
           booking.dateConfiguration.selectedDates.forEach((date) =>
@@ -189,12 +198,26 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const getDateStatus = (
     day: number
-  ): "available" | "booked" | "pending" | "none" => {
+  ): "available" | "booked" | "blocked" | "pending" | "none" => {
     const dateStr = `${daysInMonth.year}-${String(
       daysInMonth.month + 1
     ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
+    // First check if the date is globally blocked at company level
+    if (companyBlockedDates.includes(dateStr)) {
+      return "blocked";
+    }
+
+    // Check if any experience has this date blocked (even if not in bookingsByDate)
+    // This handles cases where a date was blocked and removed from availableDates/selectedDates
+    for (const booking of bookings) {
+      if (booking.dateAvailability?.[dateStr] === "blocked") {
+        return "blocked";
+      }
+    }
+
     const dayBookings = getBookingsForDate(day);
+
     if (dayBookings.length === 0) {
       return "none";
     }
@@ -230,12 +253,28 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       daysInMonth.month + 1
     ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dayBookings = getBookingsForDate(day);
+
+    // Always open the date action modal
+    setDateActionModalDate(dateStr);
+    setDateActionModalOpen(true);
+
+    // Also set selected booking if there are bookings (for sidebar display)
     if (dayBookings.length > 0) {
       setSelectedBooking(dayBookings[0]);
       if (onBookingClick) {
         onBookingClick(dayBookings[0], dateStr);
         setSelectedDate(dateStr);
       }
+    } else {
+      setSelectedBooking(null);
+      setSelectedDate(null);
+    }
+  };
+
+  const handleDateActionUpdate = () => {
+    // Refresh bookings list
+    if (onBookingsUpdate) {
+      onBookingsUpdate();
     }
   };
 
@@ -292,8 +331,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       let dayStyling =
         "aspect-square p-2 border border-gray-200 cursor-pointer transition-colors hover:bg-gray-50";
 
-      if (isToday) {
+      if (isToday && dateStatus !== "blocked") {
         dayStyling += " bg-blue-50 border-blue-300";
+      } else if (dateStatus === "blocked") {
+        dayStyling += " bg-red-50 border-red-300 hover:bg-red-100";
       } else if (dateStatus === "available") {
         dayStyling += " bg-blue-50 border-blue-300 hover:bg-blue-100";
       } else if (dateStatus === "booked") {
@@ -311,7 +352,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           <div className="flex flex-col h-full">
             <div
               className={`text-sm font-medium mb-1 ${
-                isToday
+                dateStatus === "blocked"
+                  ? "text-red-700"
+                  : isToday
                   ? "text-blue-600"
                   : dateStatus === "available"
                   ? "text-blue-700"
@@ -324,7 +367,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             >
               {day}
             </div>
-            {dayBookings.length > 0 && (
+            {dayBookings.length > 0 && dateStatus !== "blocked" && (
               <div className="flex-1 overflow-hidden">
                 {dayBookings.slice(0, 2).map((booking) => (
                   <div
@@ -348,6 +391,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     +{dayBookings.length - 2} more
                   </div>
                 )}
+              </div>
+            )}
+            {dateStatus === "blocked" && (
+              <div className="flex-1 flex items-center justify-center">
+                <IconX size={16} className="text-red-600" />
               </div>
             )}
           </div>
@@ -435,6 +483,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           <div className="flex items-center">
             <div className="w-4 h-4 bg-green-50 border border-green-300 rounded mr-2" />
             <span className="text-gray-600">Booked Experience</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-4 h-4 bg-red-50 border border-red-300 rounded mr-2" />
+            <span className="text-gray-600">Blocked Date</span>
           </div>
         </div>
 
@@ -568,6 +620,24 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Date Action Modal */}
+      {companyId && dateActionModalDate && (
+        <DateActionModal
+          isOpen={dateActionModalOpen}
+          onClose={() => setDateActionModalOpen(false)}
+          date={dateActionModalDate}
+          experiencesOnDate={
+            dateActionModalDate
+              ? bookingsByDate.get(dateActionModalDate) || []
+              : []
+          }
+          allExperiences={bookings}
+          companyId={companyId}
+          companyBlockedDates={companyBlockedDates}
+          onUpdate={handleDateActionUpdate}
+        />
+      )}
     </div>
   );
 };

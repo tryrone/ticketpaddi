@@ -9,6 +9,7 @@ export interface Company {
   description?: string;
   userId: string;
   events?: Event[];
+  blockedDates?: string[]; // Array of globally blocked dates (ISO string format)
 }
 
 export interface CompanyTableProps {

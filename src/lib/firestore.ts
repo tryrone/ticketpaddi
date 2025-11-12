@@ -107,6 +107,56 @@ export const updateCompany = async (
   }
 };
 
+/**
+ * Blocks or unblocks a date globally for a company
+ * @param companyId - The company ID
+ * @param date - The date to block/unblock (ISO string format)
+ * @param block - True to block, false to unblock
+ * @returns Promise<void>
+ */
+export const toggleCompanyDateBlock = async ({
+  companyId,
+  date,
+  block,
+}: {
+  companyId: string;
+  date: string;
+  block: boolean;
+}): Promise<void> => {
+  try {
+    checkFirebaseConnection();
+    const companyRef = doc(db, COMPANIES_COLLECTION, companyId);
+    const companySnap = await getDoc(companyRef);
+    
+    if (!companySnap.exists()) {
+      throw new Error("Company not found");
+    }
+    
+    const companyData = companySnap.data() as Company;
+    const currentBlockedDates = companyData.blockedDates || [];
+    
+    let updatedBlockedDates: string[];
+    if (block) {
+      // Add date if not already blocked
+      if (!currentBlockedDates.includes(date)) {
+        updatedBlockedDates = [...currentBlockedDates, date];
+      } else {
+        return; // Already blocked
+      }
+    } else {
+      // Remove date from blocked list
+      updatedBlockedDates = currentBlockedDates.filter((d) => d !== date);
+    }
+    
+    await updateDoc(companyRef, {
+      blockedDates: updatedBlockedDates,
+    });
+  } catch (error) {
+    console.error("Error toggling company date block:", error);
+    throw error;
+  }
+};
+
 export const deleteCompany = async (id: string): Promise<void> => {
   try {
     const companyRef = doc(db, COMPANIES_COLLECTION, id);
@@ -305,6 +355,83 @@ export const updateEvent = async (
     await updateDoc(eventRef, eventData);
   } catch (error) {
     console.error("Error updating event:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates the dateAvailability for a specific event and date
+ * @param companyId - The company ID
+ * @param eventId - The event ID
+ * @param date - The date to update (ISO string format)
+ * @param status - The availability status ("available", "booked", "blocked")
+ * @returns Promise<void>
+ */
+export const updateEventDateAvailability = async ({
+  companyId,
+  eventId,
+  date,
+  status,
+}: {
+  companyId: string;
+  eventId: string;
+  date: string;
+  status: "available" | "booked" | "blocked";
+}): Promise<void> => {
+  try {
+    checkFirebaseConnection();
+    
+    // Get the current event to merge dateAvailability
+    const eventRef = doc(
+      db,
+      COMPANIES_COLLECTION,
+      companyId,
+      EVENTS_SUBCOLLECTION,
+      eventId
+    );
+    const eventSnap = await getDoc(eventRef);
+    
+    if (!eventSnap.exists()) {
+      throw new Error("Event not found");
+    }
+    
+    const eventData = eventSnap.data() as Event;
+    const currentDateAvailability = eventData.dateAvailability || {};
+    
+    // Update the specific date in dateAvailability
+    const updatedDateAvailability = {
+      ...currentDateAvailability,
+      [date]: status,
+    };
+    
+    // If blocking, remove from availableDates if present
+    const updates: Partial<Event> = {
+      dateAvailability: updatedDateAvailability,
+    };
+    
+    if (status === "blocked" && eventData.availableDates) {
+      updates.availableDates = eventData.availableDates.filter(
+        (d) => d !== date
+      );
+    }
+    
+    // If blocking and has dateConfiguration with selectedDates, remove from there too
+    if (
+      status === "blocked" &&
+      eventData.dateConfiguration?.type === "selected" &&
+      eventData.dateConfiguration.selectedDates
+    ) {
+      updates.dateConfiguration = {
+        ...eventData.dateConfiguration,
+        selectedDates: eventData.dateConfiguration.selectedDates.filter(
+          (d) => d !== date
+        ),
+      };
+    }
+    
+    await updateDoc(eventRef, updates);
+  } catch (error) {
+    console.error("Error updating event date availability:", error);
     throw error;
   }
 };

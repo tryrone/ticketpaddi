@@ -162,7 +162,7 @@ const EventModal: React.FC<EventModalProps> = ({
       newErrors.image = "Image is required";
     }
 
-    if (!formData.date.trim()) {
+    if (!formData.date.trim() && eventType === "event") {
       newErrors.date = "Date is required";
     }
 

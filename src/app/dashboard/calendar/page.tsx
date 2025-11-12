@@ -11,7 +11,11 @@ import { IconCalendar, IconChevronDown } from "@tabler/icons-react";
 import { Select } from "@mantine/core";
 
 export default function CalendarPage() {
-  const { companies, loading: companiesLoading } = useCompanies();
+  const {
+    companies,
+    loading: companiesLoading,
+    fetchCompanies: refetchCompanies,
+  } = useCompanies();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [selectedBooking, setSelectedBooking] = useState<Event | null>(null);
   const [showBookingDetails, setShowBookingDetails] = useState(false);
@@ -24,9 +28,16 @@ export default function CalendarPage() {
     return selectedCompanyId;
   }, [companies, selectedCompanyId]);
 
-  const { experiences, loading: bookingsLoading } = useExperiencesByCompany(
-    defaultCompanyId || selectedCompanyId
-  );
+  const {
+    experiences,
+    loading: bookingsLoading,
+    refetch: refetchExperiences,
+  } = useExperiencesByCompany(defaultCompanyId || selectedCompanyId);
+
+  const handleUpdate = () => {
+    refetchExperiences();
+    refetchCompanies();
+  };
 
   const handleBookingClick = (booking: Event, date: string) => {
     const bookingCopy = { ...booking, date: date };
@@ -121,6 +132,8 @@ export default function CalendarPage() {
               onBookingClick={handleBookingClick}
               loading={bookingsLoading}
               companyId={selectedCompany?.id}
+              companyBlockedDates={selectedCompany?.blockedDates || []}
+              onBookingsUpdate={handleUpdate}
             />
           )}
         </div>

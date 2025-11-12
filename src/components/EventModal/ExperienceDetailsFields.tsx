@@ -208,7 +208,8 @@ export const ExperienceDetailsFields: React.FC<
                 End date
               </label>
               <CalenderPicker
-                value={dateRange.endDate}
+                minDate={dateRange?.startDate || undefined}
+                value={dateRange?.endDate || undefined}
                 onChange={(value) => onDateRangeChange("endDate", value)}
               />
             </div>
